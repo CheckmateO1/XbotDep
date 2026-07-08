@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
-import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
 MODEL = ROOT / "models" / "v1_1_contact_rich_workcell.xml"
 
 REQUIRED = [
@@ -16,11 +18,18 @@ REQUIRED = [
     "target_front_panel",
     "station_screwdriver",
     "output_zone_center",
+    "fixture_zone_visual",
+    "small_part_zone_visual",
+    "large_panel_zone_visual",
+    "screw_bin_zone_visual",
+    "cable_zone_visual",
+    "tool_zone_visual",
 ]
 
 
 def main():
     from xbotdep.mjcf_factory import ensure_v1_1_model
+
     ensure_v1_1_model(MODEL)
     root = ET.parse(MODEL).getroot()
     text = ET.tostring(root, encoding="unicode")
