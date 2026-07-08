@@ -1,16 +1,20 @@
 <mujoco model="xbotdep_v1_contact_rich_workcell">
   <compiler angle="radian"/>
-  <option timestep="0.004" gravity="0 0 -9.81" integrator="RK4"/>
+  <option timestep="0.002" gravity="0 0 -9.81" integrator="Euler"/>
   <default>
-    <geom condim="4" contype="1" conaffinity="1" solref="0.01 1" solimp="0.9 0.95 0.001" friction="1.2 0.08 0.02"/>
-    <joint damping="0.2"/>
+    <joint damping="1.0" armature="0.01"/>
+    <geom condim="3" solref="0.02 1" solimp="0.8 0.9 0.001" friction="1.0 0.03 0.01"/>
+    <default class="part_geom">
+      <geom contype="1" conaffinity="1" rgba="0.8 0.55 0.25 1"/>
+    </default>
+    <default class="hand_visual">
+      <geom contype="0" conaffinity="0" rgba="0.74 0.64 0.54 1"/>
+    </default>
   </default>
-
   <worldbody>
     <light name="key_light" pos="-1 -1 3" dir="1 1 -2"/>
     <geom name="floor" type="plane" size="2 2 0.02" pos="0 0 0" rgba="0.55 0.55 0.55 1"/>
-    <geom name="worktable" type="box" size="0.75 0.45 0.035" pos="-0.10 0 0.70" rgba="0.35 0.35 0.38 1" friction="1.0 0.06 0.02"/>
-
+    <geom name="worktable" type="box" size="0.75 0.45 0.035" pos="-0.10 0 0.70" rgba="0.35 0.35 0.38 1"/>
     <body name="empty_chassis" pos="0.12 0 0.78">
       <geom name="chassis_base" type="box" size="0.16 0.13 0.010" rgba="0.70 0.72 0.75 1"/>
       <geom name="chassis_left_wall" type="box" size="0.16 0.008 0.075" pos="0 0.13 0.075" rgba="0.70 0.72 0.75 1"/>
@@ -28,98 +32,68 @@
       <site name="target_left_side_cover" pos="0.030 0.130 0.010" size="0.006" rgba="0 0.8 0.1 1"/>
       <site name="target_right_side_cover" pos="0.030 -0.130 0.010" size="0.006" rgba="0 0.8 0.1 1"/>
     </body>
-
     <geom name="material_station_table" type="box" size="0.28 0.22 0.012" pos="-0.38 0.02 0.735" rgba="0.20 0.30 0.42 1"/>
     <site name="station_motherboard_tray_bracket" pos="-0.280 0.260 0.865" size="0.006" rgba="0.9 0.8 0.1 1"/>
-    <body name="motherboard_tray_bracket" pos="-0.280 0.260 0.820"><joint name="motherboard_tray_bracket_free" type="free" damping="0.15"/><geom name="motherboard_tray_bracket_geom" type="box" size="0.080 0.012 0.035" rgba="0.8 0.55 0.25 1" mass="0.12" friction="1.4 0.08 0.03"/></body>
+    <body name="motherboard_tray_bracket" pos="-0.280 0.260 0.820"><joint name="motherboard_tray_bracket_free" type="free" damping="1.0"/><geom name="motherboard_tray_bracket_geom" class="part_geom" type="box" size="0.080 0.012 0.035" mass="0.12"/></body>
     <site name="station_psu_bracket" pos="-0.280 0.140 0.865" size="0.006" rgba="0.9 0.8 0.1 1"/>
-    <body name="psu_bracket" pos="-0.280 0.140 0.820"><joint name="psu_bracket_free" type="free" damping="0.15"/><geom name="psu_bracket_geom" type="box" size="0.065 0.012 0.035" rgba="0.8 0.55 0.25 1" mass="0.12" friction="1.4 0.08 0.03"/></body>
+    <body name="psu_bracket" pos="-0.280 0.140 0.820"><joint name="psu_bracket_free" type="free" damping="1.0"/><geom name="psu_bracket_geom" class="part_geom" type="box" size="0.065 0.012 0.035" mass="0.12"/></body>
     <site name="station_fan_module" pos="-0.280 0.020 0.865" size="0.006" rgba="0.9 0.8 0.1 1"/>
-    <body name="fan_module" pos="-0.280 0.020 0.820"><joint name="fan_module_free" type="free" damping="0.15"/><geom name="fan_module_geom" type="box" size="0.055 0.015 0.055" rgba="0.8 0.55 0.25 1" mass="0.12" friction="1.4 0.08 0.03"/></body>
+    <body name="fan_module" pos="-0.280 0.020 0.820"><joint name="fan_module_free" type="free" damping="1.0"/><geom name="fan_module_geom" class="part_geom" type="box" size="0.055 0.015 0.055" mass="0.12"/></body>
     <site name="station_dust_filter" pos="-0.280 -0.100 0.865" size="0.006" rgba="0.9 0.8 0.1 1"/>
-    <body name="dust_filter" pos="-0.280 -0.100 0.820"><joint name="dust_filter_free" type="free" damping="0.15"/><geom name="dust_filter_geom" type="box" size="0.065 0.004 0.055" rgba="0.8 0.55 0.25 1" mass="0.12" friction="1.4 0.08 0.03"/></body>
+    <body name="dust_filter" pos="-0.280 -0.100 0.820"><joint name="dust_filter_free" type="free" damping="1.0"/><geom name="dust_filter_geom" class="part_geom" type="box" size="0.065 0.004 0.055" mass="0.12"/></body>
     <site name="station_front_io_panel" pos="-0.280 -0.220 0.865" size="0.006" rgba="0.9 0.8 0.1 1"/>
-    <body name="front_io_panel" pos="-0.280 -0.220 0.820"><joint name="front_io_panel_free" type="free" damping="0.15"/><geom name="front_io_panel_geom" type="box" size="0.055 0.008 0.018" rgba="0.8 0.55 0.25 1" mass="0.12" friction="1.4 0.08 0.03"/></body>
+    <body name="front_io_panel" pos="-0.280 -0.220 0.820"><joint name="front_io_panel_free" type="free" damping="1.0"/><geom name="front_io_panel_geom" class="part_geom" type="box" size="0.055 0.008 0.018" mass="0.12"/></body>
     <site name="station_front_io_cable" pos="-0.400 0.260 0.865" size="0.006" rgba="0.9 0.8 0.1 1"/>
-    <body name="front_io_cable" pos="-0.400 0.260 0.820"><joint name="front_io_cable_free" type="free" damping="0.15"/><geom name="front_io_cable_geom" type="box" size="0.075 0.004 0.004" rgba="0.8 0.55 0.25 1" mass="0.12" friction="1.4 0.08 0.03"/></body>
+    <body name="front_io_cable" pos="-0.400 0.260 0.820"><joint name="front_io_cable_free" type="free" damping="1.0"/><geom name="front_io_cable_geom" class="part_geom" type="box" size="0.075 0.004 0.004" mass="0.12"/></body>
     <site name="station_front_panel" pos="-0.400 0.120 0.865" size="0.006" rgba="0.9 0.8 0.1 1"/>
-    <body name="front_panel" pos="-0.400 0.120 0.820"><joint name="front_panel_free" type="free" damping="0.15"/><geom name="front_panel_geom" type="box" size="0.010 0.115 0.080" rgba="0.8 0.55 0.25 1" mass="0.12" friction="1.4 0.08 0.03"/></body>
+    <body name="front_panel" pos="-0.400 0.120 0.820"><joint name="front_panel_free" type="free" damping="1.0"/><geom name="front_panel_geom" class="part_geom" type="box" size="0.010 0.115 0.080" mass="0.12"/></body>
     <site name="station_top_cover" pos="-0.400 -0.040 0.865" size="0.006" rgba="0.9 0.8 0.1 1"/>
-    <body name="top_cover" pos="-0.400 -0.040 0.820"><joint name="top_cover_free" type="free" damping="0.15"/><geom name="top_cover_geom" type="box" size="0.110 0.120 0.008" rgba="0.8 0.55 0.25 1" mass="0.12" friction="1.4 0.08 0.03"/></body>
+    <body name="top_cover" pos="-0.400 -0.040 0.820"><joint name="top_cover_free" type="free" damping="1.0"/><geom name="top_cover_geom" class="part_geom" type="box" size="0.110 0.120 0.008" mass="0.12"/></body>
     <site name="station_left_side_cover" pos="-0.400 -0.200 0.865" size="0.006" rgba="0.9 0.8 0.1 1"/>
-    <body name="left_side_cover" pos="-0.400 -0.200 0.820"><joint name="left_side_cover_free" type="free" damping="0.15"/><geom name="left_side_cover_geom" type="box" size="0.110 0.008 0.075" rgba="0.8 0.55 0.25 1" mass="0.12" friction="1.4 0.08 0.03"/></body>
+    <body name="left_side_cover" pos="-0.400 -0.200 0.820"><joint name="left_side_cover_free" type="free" damping="1.0"/><geom name="left_side_cover_geom" class="part_geom" type="box" size="0.110 0.008 0.075" mass="0.12"/></body>
     <site name="station_right_side_cover" pos="-0.520 0.200 0.865" size="0.006" rgba="0.9 0.8 0.1 1"/>
-    <body name="right_side_cover" pos="-0.520 0.200 0.820"><joint name="right_side_cover_free" type="free" damping="0.15"/><geom name="right_side_cover_geom" type="box" size="0.110 0.008 0.075" rgba="0.8 0.55 0.25 1" mass="0.12" friction="1.4 0.08 0.03"/></body>
-
+    <body name="right_side_cover" pos="-0.520 0.200 0.820"><joint name="right_side_cover_free" type="free" damping="1.0"/><geom name="right_side_cover_geom" class="part_geom" type="box" size="0.110 0.008 0.075" mass="0.12"/></body>
     <geom name="tool_station" type="box" size="0.12 0.05 0.012" pos="-0.05 -0.34 0.735" rgba="0.18 0.18 0.18 1"/>
     <site name="station_screwdriver" pos="-0.05 -0.34 0.80" size="0.006" rgba="1 0 0 1"/>
-    <body name="screwdriver" pos="-0.05 -0.34 0.80"><joint name="screwdriver_free" type="free" damping="0.12"/><geom name="screwdriver_handle" type="capsule" fromto="-0.06 0 0 0.03 0 0" size="0.014" rgba="0.08 0.08 0.1 1" mass="0.08" friction="1.6 0.12 0.04"/><geom name="screwdriver_shaft" type="capsule" fromto="0.03 0 0 0.11 0 0" size="0.004" rgba="0.75 0.75 0.78 1" mass="0.02" friction="0.8 0.03 0.01"/></body>
-
+    <body name="screwdriver" pos="-0.05 -0.34 0.80"><joint name="screwdriver_free" type="free" damping="1.0"/><geom name="screwdriver_handle" type="capsule" fromto="-0.06 0 0 0.03 0 0" size="0.014" rgba="0.08 0.08 0.1 1" mass="0.08"/><geom name="screwdriver_shaft" type="capsule" fromto="0.03 0 0 0.11 0 0" size="0.004" rgba="0.75 0.75 0.78 1" mass="0.02"/></body>
     <geom name="screw_station" type="box" size="0.12 0.06 0.012" pos="-0.05 0.34 0.735" rgba="0.15 0.15 0.22 1"/>
     <site name="screw_bin" pos="-0.05 0.34 0.79" size="0.006" rgba="1 1 0 1"/>
-    <geom name="screw_01_visual" type="cylinder" size="0.006 0.004" pos="-0.100 0.315 0.758" rgba="0.1 0.1 0.1 1"/>
-    <geom name="screw_02_visual" type="cylinder" size="0.006 0.004" pos="-0.070 0.315 0.758" rgba="0.1 0.1 0.1 1"/>
-    <geom name="screw_03_visual" type="cylinder" size="0.006 0.004" pos="-0.040 0.315 0.758" rgba="0.1 0.1 0.1 1"/>
-    <geom name="screw_04_visual" type="cylinder" size="0.006 0.004" pos="-0.010 0.315 0.758" rgba="0.1 0.1 0.1 1"/>
-    <geom name="screw_05_visual" type="cylinder" size="0.006 0.004" pos="-0.100 0.340 0.758" rgba="0.1 0.1 0.1 1"/>
-    <geom name="screw_06_visual" type="cylinder" size="0.006 0.004" pos="-0.070 0.340 0.758" rgba="0.1 0.1 0.1 1"/>
-    <geom name="screw_07_visual" type="cylinder" size="0.006 0.004" pos="-0.040 0.340 0.758" rgba="0.1 0.1 0.1 1"/>
-    <geom name="screw_08_visual" type="cylinder" size="0.006 0.004" pos="-0.010 0.340 0.758" rgba="0.1 0.1 0.1 1"/>
-    <geom name="screw_09_visual" type="cylinder" size="0.006 0.004" pos="-0.100 0.365 0.758" rgba="0.1 0.1 0.1 1"/>
-    <geom name="screw_10_visual" type="cylinder" size="0.006 0.004" pos="-0.070 0.365 0.758" rgba="0.1 0.1 0.1 1"/>
-    <geom name="screw_11_visual" type="cylinder" size="0.006 0.004" pos="-0.040 0.365 0.758" rgba="0.1 0.1 0.1 1"/>
-    <geom name="screw_12_visual" type="cylinder" size="0.006 0.004" pos="-0.010 0.365 0.758" rgba="0.1 0.1 0.1 1"/>
-
-    <body name="left_hand_mocap" mocap="true" pos="-0.12 0.280 0.95"><geom name="left_palm_geom" type="box" size="0.035 0.020 0.050" rgba="0.72 0.62 0.52 1" friction="1.2 0.08 0.02"/><site name="left_palm_site" pos="0 0 0" size="0.008" rgba="0.1 0.1 1 1"/>
-      <body name="left_thumb_prox" pos="0.020 0.025 -0.015"><joint name="left_thumb_prox_joint" type="hinge" axis="0 1 0" range="0 1.1" damping="0.25"/><geom name="left_thumb_prox_geom" type="capsule" fromto="0 0 0 0.032 0 0" size="0.006" rgba="0.74 0.64 0.54 1" friction="1.5 0.1 0.04"/><body name="left_thumb_mid" pos="0.032 0 0"><joint name="left_thumb_mid_joint" type="hinge" axis="0 1 0" range="0 1.1" damping="0.20"/><geom name="left_thumb_mid_geom" type="capsule" fromto="0 0 0 0.026 0 0" size="0.0055" rgba="0.74 0.64 0.54 1" friction="1.5 0.1 0.04"/><body name="left_thumb_dist" pos="0.026 0 0"><joint name="left_thumb_dist_joint" type="hinge" axis="0 1 0" range="0 1.0" damping="0.15"/><geom name="left_thumb_dist_geom" type="capsule" fromto="0 0 0 0.022 0 0" size="0.005" rgba="0.74 0.64 0.54 1" friction="1.5 0.1 0.04"/></body></body></body>
-      <body name="left_index_prox" pos="0.035 0.014 0.030"><joint name="left_index_prox_joint" type="hinge" axis="0 1 0" range="0 1.1" damping="0.25"/><geom name="left_index_prox_geom" type="capsule" fromto="0 0 0 0.032 0 0" size="0.006" rgba="0.74 0.64 0.54 1" friction="1.5 0.1 0.04"/><body name="left_index_mid" pos="0.032 0 0"><joint name="left_index_mid_joint" type="hinge" axis="0 1 0" range="0 1.1" damping="0.20"/><geom name="left_index_mid_geom" type="capsule" fromto="0 0 0 0.026 0 0" size="0.0055" rgba="0.74 0.64 0.54 1" friction="1.5 0.1 0.04"/><body name="left_index_dist" pos="0.026 0 0"><joint name="left_index_dist_joint" type="hinge" axis="0 1 0" range="0 1.0" damping="0.15"/><geom name="left_index_dist_geom" type="capsule" fromto="0 0 0 0.022 0 0" size="0.005" rgba="0.74 0.64 0.54 1" friction="1.5 0.1 0.04"/></body></body></body>
-      <body name="left_middle_prox" pos="0.037 0.005 0.034"><joint name="left_middle_prox_joint" type="hinge" axis="0 1 0" range="0 1.1" damping="0.25"/><geom name="left_middle_prox_geom" type="capsule" fromto="0 0 0 0.032 0 0" size="0.006"/><body name="left_middle_mid" pos="0.032 0 0"><joint name="left_middle_mid_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="left_middle_mid_geom" type="capsule" fromto="0 0 0 0.026 0 0" size="0.0055"/><body name="left_middle_dist" pos="0.026 0 0"><joint name="left_middle_dist_joint" type="hinge" axis="0 1 0" range="0 1.0"/><geom name="left_middle_dist_geom" type="capsule" fromto="0 0 0 0.022 0 0" size="0.005"/></body></body></body>
-      <body name="left_ring_prox" pos="0.035 -0.005 0.030"><joint name="left_ring_prox_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="left_ring_prox_geom" type="capsule" fromto="0 0 0 0.032 0 0" size="0.006"/><body name="left_ring_mid" pos="0.032 0 0"><joint name="left_ring_mid_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="left_ring_mid_geom" type="capsule" fromto="0 0 0 0.026 0 0" size="0.0055"/><body name="left_ring_dist" pos="0.026 0 0"><joint name="left_ring_dist_joint" type="hinge" axis="0 1 0" range="0 1.0"/><geom name="left_ring_dist_geom" type="capsule" fromto="0 0 0 0.022 0 0" size="0.005"/></body></body></body>
-      <body name="left_little_prox" pos="0.030 -0.014 0.024"><joint name="left_little_prox_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="left_little_prox_geom" type="capsule" fromto="0 0 0 0.032 0 0" size="0.006"/><body name="left_little_mid" pos="0.032 0 0"><joint name="left_little_mid_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="left_little_mid_geom" type="capsule" fromto="0 0 0 0.026 0 0" size="0.0055"/><body name="left_little_dist" pos="0.026 0 0"><joint name="left_little_dist_joint" type="hinge" axis="0 1 0" range="0 1.0"/><geom name="left_little_dist_geom" type="capsule" fromto="0 0 0 0.022 0 0" size="0.005"/></body></body></body>
-    </body>
-
-    <body name="right_hand_mocap" mocap="true" pos="-0.12 -0.280 0.95"><geom name="right_palm_geom" type="box" size="0.035 0.020 0.050" rgba="0.72 0.62 0.52 1"/><site name="right_palm_site" pos="0 0 0" size="0.008" rgba="0.1 0.1 1 1"/>
-      <body name="right_thumb_prox" pos="0.020 -0.025 -0.015"><joint name="right_thumb_prox_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="right_thumb_prox_geom" type="capsule" fromto="0 0 0 0.032 0 0" size="0.006"/><body name="right_thumb_mid" pos="0.032 0 0"><joint name="right_thumb_mid_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="right_thumb_mid_geom" type="capsule" fromto="0 0 0 0.026 0 0" size="0.0055"/><body name="right_thumb_dist" pos="0.026 0 0"><joint name="right_thumb_dist_joint" type="hinge" axis="0 1 0" range="0 1.0"/><geom name="right_thumb_dist_geom" type="capsule" fromto="0 0 0 0.022 0 0" size="0.005"/></body></body></body>
-      <body name="right_index_prox" pos="0.035 -0.014 0.030"><joint name="right_index_prox_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="right_index_prox_geom" type="capsule" fromto="0 0 0 0.032 0 0" size="0.006"/><body name="right_index_mid" pos="0.032 0 0"><joint name="right_index_mid_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="right_index_mid_geom" type="capsule" fromto="0 0 0 0.026 0 0" size="0.0055"/><body name="right_index_dist" pos="0.026 0 0"><joint name="right_index_dist_joint" type="hinge" axis="0 1 0" range="0 1.0"/><geom name="right_index_dist_geom" type="capsule" fromto="0 0 0 0.022 0 0" size="0.005"/></body></body></body>
-      <body name="right_middle_prox" pos="0.037 -0.005 0.034"><joint name="right_middle_prox_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="right_middle_prox_geom" type="capsule" fromto="0 0 0 0.032 0 0" size="0.006"/><body name="right_middle_mid" pos="0.032 0 0"><joint name="right_middle_mid_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="right_middle_mid_geom" type="capsule" fromto="0 0 0 0.026 0 0" size="0.0055"/><body name="right_middle_dist" pos="0.026 0 0"><joint name="right_middle_dist_joint" type="hinge" axis="0 1 0" range="0 1.0"/><geom name="right_middle_dist_geom" type="capsule" fromto="0 0 0 0.022 0 0" size="0.005"/></body></body></body>
-      <body name="right_ring_prox" pos="0.035 0.005 0.030"><joint name="right_ring_prox_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="right_ring_prox_geom" type="capsule" fromto="0 0 0 0.032 0 0" size="0.006"/><body name="right_ring_mid" pos="0.032 0 0"><joint name="right_ring_mid_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="right_ring_mid_geom" type="capsule" fromto="0 0 0 0.026 0 0" size="0.0055"/><body name="right_ring_dist" pos="0.026 0 0"><joint name="right_ring_dist_joint" type="hinge" axis="0 1 0" range="0 1.0"/><geom name="right_ring_dist_geom" type="capsule" fromto="0 0 0 0.022 0 0" size="0.005"/></body></body></body>
-      <body name="right_little_prox" pos="0.030 0.014 0.024"><joint name="right_little_prox_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="right_little_prox_geom" type="capsule" fromto="0 0 0 0.032 0 0" size="0.006"/><body name="right_little_mid" pos="0.032 0 0"><joint name="right_little_mid_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="right_little_mid_geom" type="capsule" fromto="0 0 0 0.026 0 0" size="0.0055"/><body name="right_little_dist" pos="0.026 0 0"><joint name="right_little_dist_joint" type="hinge" axis="0 1 0" range="0 1.0"/><geom name="right_little_dist_geom" type="capsule" fromto="0 0 0 0.022 0 0" size="0.005"/></body></body></body>
-    </body>
-
+    <geom name="screw_01_visual" type="cylinder" size="0.006 0.004" pos="-0.110 0.315 0.758" rgba="0.1 0.1 0.1 1"/><geom name="screw_02_visual" type="cylinder" size="0.006 0.004" pos="-0.080 0.315 0.758" rgba="0.1 0.1 0.1 1"/><geom name="screw_03_visual" type="cylinder" size="0.006 0.004" pos="-0.050 0.315 0.758" rgba="0.1 0.1 0.1 1"/><geom name="screw_04_visual" type="cylinder" size="0.006 0.004" pos="-0.020 0.315 0.758" rgba="0.1 0.1 0.1 1"/><geom name="screw_05_visual" type="cylinder" size="0.006 0.004" pos="-0.110 0.340 0.758" rgba="0.1 0.1 0.1 1"/><geom name="screw_06_visual" type="cylinder" size="0.006 0.004" pos="-0.080 0.340 0.758" rgba="0.1 0.1 0.1 1"/><geom name="screw_07_visual" type="cylinder" size="0.006 0.004" pos="-0.050 0.340 0.758" rgba="0.1 0.1 0.1 1"/><geom name="screw_08_visual" type="cylinder" size="0.006 0.004" pos="-0.020 0.340 0.758" rgba="0.1 0.1 0.1 1"/><geom name="screw_09_visual" type="cylinder" size="0.006 0.004" pos="-0.110 0.365 0.758" rgba="0.1 0.1 0.1 1"/><geom name="screw_10_visual" type="cylinder" size="0.006 0.004" pos="-0.080 0.365 0.758" rgba="0.1 0.1 0.1 1"/><geom name="screw_11_visual" type="cylinder" size="0.006 0.004" pos="-0.050 0.365 0.758" rgba="0.1 0.1 0.1 1"/><geom name="screw_12_visual" type="cylinder" size="0.006 0.004" pos="-0.020 0.365 0.758" rgba="0.1 0.1 0.1 1"/>
+    <body name="left_hand_mocap" mocap="true" pos="-0.20 0.280 0.94"><geom name="left_palm_geom" class="hand_visual" type="box" size="0.035 0.020 0.050"/><site name="left_palm_site" pos="0 0 0" size="0.008" rgba="0.1 0.1 1 1"/><body name="left_thumb_prox" pos="0.020 0.025 -0.015"><joint name="left_thumb_prox_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="left_thumb_prox_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.032 0 0" size="0.006"/><body name="left_thumb_mid" pos="0.032 0 0"><joint name="left_thumb_mid_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="left_thumb_mid_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.026 0 0" size="0.0055"/><body name="left_thumb_dist" pos="0.026 0 0"><joint name="left_thumb_dist_joint" type="hinge" axis="0 1 0" range="0 1.0"/><geom name="left_thumb_dist_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.022 0 0" size="0.005"/></body></body></body><body name="left_index_prox" pos="0.035 0.014 0.030"><joint name="left_index_prox_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="left_index_prox_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.032 0 0" size="0.006"/><body name="left_index_mid" pos="0.032 0 0"><joint name="left_index_mid_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="left_index_mid_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.026 0 0" size="0.0055"/><body name="left_index_dist" pos="0.026 0 0"><joint name="left_index_dist_joint" type="hinge" axis="0 1 0" range="0 1.0"/><geom name="left_index_dist_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.022 0 0" size="0.005"/></body></body></body><body name="left_middle_prox" pos="0.037 0.005 0.034"><joint name="left_middle_prox_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="left_middle_prox_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.032 0 0" size="0.006"/><body name="left_middle_mid" pos="0.032 0 0"><joint name="left_middle_mid_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="left_middle_mid_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.026 0 0" size="0.0055"/><body name="left_middle_dist" pos="0.026 0 0"><joint name="left_middle_dist_joint" type="hinge" axis="0 1 0" range="0 1.0"/><geom name="left_middle_dist_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.022 0 0" size="0.005"/></body></body></body><body name="left_ring_prox" pos="0.035 -0.005 0.030"><joint name="left_ring_prox_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="left_ring_prox_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.032 0 0" size="0.006"/><body name="left_ring_mid" pos="0.032 0 0"><joint name="left_ring_mid_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="left_ring_mid_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.026 0 0" size="0.0055"/><body name="left_ring_dist" pos="0.026 0 0"><joint name="left_ring_dist_joint" type="hinge" axis="0 1 0" range="0 1.0"/><geom name="left_ring_dist_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.022 0 0" size="0.005"/></body></body></body><body name="left_little_prox" pos="0.030 -0.014 0.024"><joint name="left_little_prox_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="left_little_prox_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.032 0 0" size="0.006"/><body name="left_little_mid" pos="0.032 0 0"><joint name="left_little_mid_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="left_little_mid_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.026 0 0" size="0.0055"/><body name="left_little_dist" pos="0.026 0 0"><joint name="left_little_dist_joint" type="hinge" axis="0 1 0" range="0 1.0"/><geom name="left_little_dist_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.022 0 0" size="0.005"/></body></body></body></body>
+    <body name="right_hand_mocap" mocap="true" pos="-0.20 -0.280 0.94"><geom name="right_palm_geom" class="hand_visual" type="box" size="0.035 0.020 0.050"/><site name="right_palm_site" pos="0 0 0" size="0.008" rgba="0.1 0.1 1 1"/><body name="right_thumb_prox" pos="0.020 -0.025 -0.015"><joint name="right_thumb_prox_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="right_thumb_prox_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.032 0 0" size="0.006"/><body name="right_thumb_mid" pos="0.032 0 0"><joint name="right_thumb_mid_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="right_thumb_mid_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.026 0 0" size="0.0055"/><body name="right_thumb_dist" pos="0.026 0 0"><joint name="right_thumb_dist_joint" type="hinge" axis="0 1 0" range="0 1.0"/><geom name="right_thumb_dist_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.022 0 0" size="0.005"/></body></body></body><body name="right_index_prox" pos="0.035 -0.014 0.030"><joint name="right_index_prox_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="right_index_prox_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.032 0 0" size="0.006"/><body name="right_index_mid" pos="0.032 0 0"><joint name="right_index_mid_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="right_index_mid_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.026 0 0" size="0.0055"/><body name="right_index_dist" pos="0.026 0 0"><joint name="right_index_dist_joint" type="hinge" axis="0 1 0" range="0 1.0"/><geom name="right_index_dist_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.022 0 0" size="0.005"/></body></body></body><body name="right_middle_prox" pos="0.037 -0.005 0.034"><joint name="right_middle_prox_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="right_middle_prox_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.032 0 0" size="0.006"/><body name="right_middle_mid" pos="0.032 0 0"><joint name="right_middle_mid_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="right_middle_mid_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.026 0 0" size="0.0055"/><body name="right_middle_dist" pos="0.026 0 0"><joint name="right_middle_dist_joint" type="hinge" axis="0 1 0" range="0 1.0"/><geom name="right_middle_dist_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.022 0 0" size="0.005"/></body></body></body><body name="right_ring_prox" pos="0.035 0.005 0.030"><joint name="right_ring_prox_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="right_ring_prox_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.032 0 0" size="0.006"/><body name="right_ring_mid" pos="0.032 0 0"><joint name="right_ring_mid_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="right_ring_mid_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.026 0 0" size="0.0055"/><body name="right_ring_dist" pos="0.026 0 0"><joint name="right_ring_dist_joint" type="hinge" axis="0 1 0" range="0 1.0"/><geom name="right_ring_dist_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.022 0 0" size="0.005"/></body></body></body><body name="right_little_prox" pos="0.030 0.014 0.024"><joint name="right_little_prox_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="right_little_prox_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.032 0 0" size="0.006"/><body name="right_little_mid" pos="0.032 0 0"><joint name="right_little_mid_joint" type="hinge" axis="0 1 0" range="0 1.1"/><geom name="right_little_mid_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.026 0 0" size="0.0055"/><body name="right_little_dist" pos="0.026 0 0"><joint name="right_little_dist_joint" type="hinge" axis="0 1 0" range="0 1.0"/><geom name="right_little_dist_geom" class="hand_visual" type="capsule" fromto="0 0 0 0.022 0 0" size="0.005"/></body></body></body></body>
     <geom name="output_zone" type="box" size="0.20 0.16 0.006" pos="0.52 0 0.738" rgba="0.10 0.45 0.20 0.7"/>
     <site name="output_zone_center" pos="0.52 0 0.80" size="0.008" rgba="0 1 1 1"/>
   </worldbody>
-
   <actuator>
-    <position name="left_thumb_prox_act" joint="left_thumb_prox_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="left_thumb_mid_act" joint="left_thumb_mid_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="left_thumb_dist_act" joint="left_thumb_dist_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="left_index_prox_act" joint="left_index_prox_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="left_index_mid_act" joint="left_index_mid_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="left_index_dist_act" joint="left_index_dist_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="left_middle_prox_act" joint="left_middle_prox_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="left_middle_mid_act" joint="left_middle_mid_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="left_middle_dist_act" joint="left_middle_dist_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="left_ring_prox_act" joint="left_ring_prox_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="left_ring_mid_act" joint="left_ring_mid_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="left_ring_dist_act" joint="left_ring_dist_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="left_little_prox_act" joint="left_little_prox_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="left_little_mid_act" joint="left_little_mid_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="left_little_dist_act" joint="left_little_dist_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="right_thumb_prox_act" joint="right_thumb_prox_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="right_thumb_mid_act" joint="right_thumb_mid_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="right_thumb_dist_act" joint="right_thumb_dist_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="right_index_prox_act" joint="right_index_prox_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="right_index_mid_act" joint="right_index_mid_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="right_index_dist_act" joint="right_index_dist_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="right_middle_prox_act" joint="right_middle_prox_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="right_middle_mid_act" joint="right_middle_mid_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="right_middle_dist_act" joint="right_middle_dist_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="right_ring_prox_act" joint="right_ring_prox_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="right_ring_mid_act" joint="right_ring_mid_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="right_ring_dist_act" joint="right_ring_dist_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="right_little_prox_act" joint="right_little_prox_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="right_little_mid_act" joint="right_little_mid_joint" kp="4.0" ctrlrange="0 1.2"/>
-    <position name="right_little_dist_act" joint="right_little_dist_joint" kp="4.0" ctrlrange="0 1.2"/>
+    <position name="left_thumb_prox_act" joint="left_thumb_prox_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="left_thumb_mid_act" joint="left_thumb_mid_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="left_thumb_dist_act" joint="left_thumb_dist_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="left_index_prox_act" joint="left_index_prox_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="left_index_mid_act" joint="left_index_mid_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="left_index_dist_act" joint="left_index_dist_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="left_middle_prox_act" joint="left_middle_prox_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="left_middle_mid_act" joint="left_middle_mid_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="left_middle_dist_act" joint="left_middle_dist_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="left_ring_prox_act" joint="left_ring_prox_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="left_ring_mid_act" joint="left_ring_mid_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="left_ring_dist_act" joint="left_ring_dist_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="left_little_prox_act" joint="left_little_prox_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="left_little_mid_act" joint="left_little_mid_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="left_little_dist_act" joint="left_little_dist_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="right_thumb_prox_act" joint="right_thumb_prox_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="right_thumb_mid_act" joint="right_thumb_mid_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="right_thumb_dist_act" joint="right_thumb_dist_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="right_index_prox_act" joint="right_index_prox_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="right_index_mid_act" joint="right_index_mid_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="right_index_dist_act" joint="right_index_dist_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="right_middle_prox_act" joint="right_middle_prox_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="right_middle_mid_act" joint="right_middle_mid_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="right_middle_dist_act" joint="right_middle_dist_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="right_ring_prox_act" joint="right_ring_prox_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="right_ring_mid_act" joint="right_ring_mid_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="right_ring_dist_act" joint="right_ring_dist_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="right_little_prox_act" joint="right_little_prox_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="right_little_mid_act" joint="right_little_mid_joint" kp="1.0" ctrlrange="0 1.2"/>
+    <position name="right_little_dist_act" joint="right_little_dist_joint" kp="1.0" ctrlrange="0 1.2"/>
   </actuator>
 </mujoco>
