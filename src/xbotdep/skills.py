@@ -34,10 +34,20 @@ def _both_hands_free_for_large_part(w: ContactRichWorld) -> bool:
     return w.holding.get("left") is None and w.holding.get("right") is None
 
 
+def _target_support_pose(w: ContactRichWorld, part: str) -> np.ndarray:
+    target = w.site_pos(w.part_targets[part])
+    return target + np.array([-0.045, 0.095, 0.075])
+
+
+def _target_driver_pose(w: ContactRichWorld, part: str) -> np.ndarray:
+    target = w.site_pos(w.part_targets[part])
+    return target + np.array([0.035, -0.075, 0.085])
+
+
 # ---------------------------------------------------------------------------
 # Human-like hand role policy
 # ---------------------------------------------------------------------------
-# V1 uses a fixed body frame and role assignment:
+# V1.1 uses a fixed body frame and role assignment:
 # - left hand: support, stabilization, datum holding, bimanual balance;
 # - right hand: tool handling, screw feeding, precision placement;
 # - both hands: large module/cover alignment.
@@ -57,7 +67,7 @@ def init_workcell(ctx: Dict[str, Any]):
         "final_quality_passed": False,
         "recoveries": 0,
     })
-    return ok("Workcell initialized: empty chassis in fixture, materials at station, tool at rack, hands open.")
+    return ok("Workcell initialized: structured zones active, empty chassis in fixture, materials/tool at stations, hands open.")
 
 
 def verify_stations(ctx: Dict[str, Any]):
@@ -69,14 +79,14 @@ def verify_stations(ctx: Dict[str, Any]):
         except Exception:
             missing_sites.append(site)
     ctx["stations_verified"] = not missing_sites
-    return ok("Material station, screw station and tool station verified.") if not missing_sites else fail(f"Missing station sites: {missing_sites}")
+    return ok("Material, screw, cable, tool and fixture zones verified.") if not missing_sites else fail(f"Missing station sites: {missing_sites}")
 
 
 def acquire_tool(ctx, tool: str, hand: str):
     if tool != "screwdriver":
-        return fail(f"Unsupported tool in V1: {tool}")
+        return fail(f"Unsupported tool in V1.1: {tool}")
     if hand != "right":
-        return fail("V1 role violation: screwdriver must be acquired by right hand.")
+        return fail("V1.1 role violation: screwdriver must be acquired by right hand.")
     w = world(ctx)
     if w.holding.get("right") is not None:
         return fail(f"Right hand is occupied by {w.holding.get('right')}; cannot acquire screwdriver")
@@ -85,7 +95,7 @@ def acquire_tool(ctx, tool: str, hand: str):
     ctx["screwdriver_parked"] = not success
     ctx["screwdriver_returned"] = False if success else ctx.get("screwdriver_returned", False)
     ctx["active_tool"] = "screwdriver" if success else None
-    return ok("Right hand acquired screwdriver from tool station.") if success else fail("Cannot acquire screwdriver.")
+    return ok("Right hand acquired screwdriver from tool zone using staged approach.") if success else fail("Cannot acquire screwdriver.")
 
 
 def _check_install_prerequisite(w: ContactRichWorld, part: str):
@@ -123,23 +133,28 @@ def install_part_bimanual(ctx, part: str, mode: str):
     ctx["active_part"] = part
     target = w.site_pos(w.part_targets[part])
     if mode == "bimanual_large_part":
+        w.move_hand_standby("left", role="support")
+        w.move_hand_standby("right", role="manipulation")
         w.grasp_object("left", part, mode="support")
         w.grasp_object("right", part, mode="power")
-        w.move_hand_to("left", target + np.array([-0.02, 0.09, 0.08]), duration=0.30)
+        w.move_hand_via("left", [w.safe_overhead(w.hand_pos("left")), w.safe_overhead(target), target + np.array([-0.045, 0.105, 0.085])], duration_each=0.14)
+        w.move_hand_via("right", [w.safe_overhead(w.hand_pos("right")), w.safe_overhead(target), target + np.array([0.045, -0.090, 0.080])], duration_each=0.14)
         w.release_object("right", part, target)
-        w.holding["left"] = None
-        w.open_hand("left")
     else:
-        w.move_hand_to("left", target + np.array([-0.04, 0.09, 0.07]), duration=0.25)
+        w.move_hand_standby("left", role="support")
+        w.move_hand_standby("right", role="manipulation")
+        w.move_hand_via("left", [w.safe_overhead(w.hand_pos("left")), w.safe_overhead(target), _target_support_pose(w, part)], duration_each=0.13)
         w.close_hand("left", mode="support")
         w.grasp_object("right", part, mode="power")
+        w.move_hand_via("right", [w.safe_overhead(w.hand_pos("right")), w.safe_overhead(target), _target_driver_pose(w, part)], duration_each=0.13)
         w.release_object("right", part, target)
         w.open_hand("left")
+        w.move_hand_standby("left", role="support")
 
     err = w.install_error_mm(part)
     ctx["last_error_mm"] = err
     ctx[f"{part}_placed"] = err <= tolerance_mm(ctx, part)
-    return ok(f"Installed {part}, pose_error={err:.2f} mm") if ctx[f"{part}_placed"] else fail(f"{part} pose error too high: {err:.2f} mm")
+    return ok(f"Installed {part}, pose_error={err:.2f} mm, staged_zone_motion=True") if ctx[f"{part}_placed"] else fail(f"{part} pose error too high: {err:.2f} mm")
 
 
 def fasten_part(ctx, part: str, screws: List[str]):
@@ -148,30 +163,38 @@ def fasten_part(ctx, part: str, screws: List[str]):
         return fail(f"Cannot fasten {part} before installation")
     if w.holding.get("right") != "screwdriver":
         return fail("Right hand does not hold screwdriver")
+    w.move_hand_via("left", [w.safe_overhead(w.hand_pos("left")), w.safe_overhead(w.site_pos(w.part_targets[part])), _target_support_pose(w, part)], duration_each=0.11)
+    w.close_hand("left", mode="support")
     for screw in screws:
         if not w.drive_screw(screw, part):
             return fail(f"Failed to feed/drive {screw} for {part}")
+    w.open_hand("left")
+    w.move_hand_standby("left", role="support")
     w.fastened_parts.add(part)
     ctx[f"{part}_fastened"] = True
-    return ok(f"Fastened {part} with screws {screws}")
+    return ok(f"Fastened {part} with screws {screws}; left-hand support maintained.")
 
 
 def route_cable(ctx, cable: str):
     w = world(ctx)
     if cable != "front_io_cable":
-        return fail(f"Unsupported cable in V1: {cable}")
+        return fail(f"Unsupported cable in V1.1: {cable}")
     if not _right_hand_free_for_material(w):
         return fail(f"Cannot route cable; right hand occupied by {w.holding.get('right')}")
     violation = _check_install_prerequisite(w, cable)
     if violation:
         return fail(violation)
-    w.move_hand_to("left", w.site_pos("target_front_io_panel") + np.array([-0.03, 0.07, 0.06]), duration=0.25)
+    target = w.site_pos(w.part_targets[cable])
+    w.move_hand_via("left", [w.safe_overhead(w.hand_pos("left")), w.safe_overhead(w.site_pos("target_front_io_panel")), w.site_pos("target_front_io_panel") + np.array([-0.03, 0.07, 0.06])], duration_each=0.12)
     w.close_hand("left", mode="support")
+    w.move_hand_standby("right", role="manipulation")
     w.grasp_object("right", cable, mode="pinch")
-    w.release_object("right", cable, w.site_pos(w.part_targets[cable]))
+    w.move_hand_via("right", [w.safe_overhead(w.hand_pos("right")), w.safe_overhead(target), target + np.array([0.02, -0.03, 0.05])], duration_each=0.12)
+    w.release_object("right", cable, target)
     w.open_hand("left")
+    w.move_hand_standby("left", role="support")
     ctx["front_io_cable_routed"] = True
-    return ok("Front IO cable routed by right-hand pinch while left hand supports panel.")
+    return ok("Front IO cable routed with right-hand pinch and left-hand panel support.")
 
 
 def install_side_covers(ctx):
@@ -183,7 +206,7 @@ def install_side_covers(ctx):
         if not result.ok:
             return result
     ctx["side_covers_placed"] = True
-    return ok("Both side covers installed with bimanual alignment.")
+    return ok("Both side covers installed with staged bimanual alignment.")
 
 
 def fasten_covers(ctx, screws):
@@ -193,17 +216,22 @@ def fasten_covers(ctx, screws):
         return fail("Cannot fasten covers before top and side covers are installed")
     if w.holding.get("right") != "screwdriver":
         return fail("Right hand does not hold screwdriver")
+    support_target = w.site_pos("target_top_cover") + np.array([-0.05, 0.08, 0.06])
+    w.move_hand_via("left", [w.safe_overhead(w.hand_pos("left")), w.safe_overhead(support_target), support_target], duration_each=0.12)
+    w.close_hand("left", mode="support")
     for screw in screws:
         if not w.drive_screw(screw, "top_cover"):
             return fail(f"Failed to drive cover screw {screw}")
+    w.open_hand("left")
+    w.move_hand_standby("left", role="support")
     w.fastened_parts.update(required)
     ctx["covers_fastened"] = True
-    return ok("Cover screws fastened.")
+    return ok("Cover screws fastened with left-hand cover stabilization.")
 
 
 def return_tool(ctx, tool, hand):
     if tool != "screwdriver" or hand != "right":
-        return fail("V1 role violation: right hand must return screwdriver")
+        return fail("V1.1 role violation: right hand must return screwdriver")
     w = world(ctx)
     if w.holding.get("right") != "screwdriver":
         return fail(f"Cannot return screwdriver; right hand holds {w.holding.get('right')}")
@@ -212,7 +240,7 @@ def return_tool(ctx, tool, hand):
     ctx["screwdriver_parked"] = success
     ctx["screwdriver_returned"] = success
     ctx["active_tool"] = None
-    return ok("Screwdriver returned to tool rack; right hand is free.") if success else fail("Failed to return screwdriver")
+    return ok("Screwdriver returned to tool zone; right hand is free.") if success else fail("Failed to return screwdriver")
 
 
 def final_quality_inspection(ctx):
@@ -246,11 +274,11 @@ def recover_to_safe_pose(ctx):
     w = world(ctx)
     if w.holding.get("left") is None:
         w.open_hand("left")
+        w.move_hand_home("left")
     if w.holding.get("right") is None:
         w.open_hand("right")
-    w.move_hand_to("left", [-0.20, 0.28, 0.94], duration=0.20)
-    w.move_hand_to("right", [-0.20, -0.28, 0.94], duration=0.20)
-    return ok("Recovered both hands to safe pose without corrupting held-object state.")
+        w.move_hand_home("right")
+    return ok("Recovered both hands to home poses without corrupting held-object state.")
 
 
 def recover_tool_acquisition(ctx):
@@ -259,7 +287,6 @@ def recover_tool_acquisition(ctx):
 
 def recover_part_installation(ctx):
     w = world(ctx)
-    # Do not silently overwrite a tool/part; clear only non-tool temporary part latches.
     for hand, obj in list(w.holding.items()):
         if obj is not None and obj != "screwdriver":
             w.holding[hand] = None
@@ -269,7 +296,6 @@ def recover_part_installation(ctx):
 def recover_fastening(ctx):
     w = world(ctx)
     if w.holding.get("right") is None:
-        # Fastening recovery may reacquire the screwdriver because the next retry expects it.
         w.acquire_screwdriver()
         ctx["screwdriver_acquired"] = True
         ctx["screwdriver_parked"] = False
