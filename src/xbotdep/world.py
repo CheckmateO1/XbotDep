@@ -13,21 +13,16 @@ from .dexterous_hand import (
     tool_grasp_command,
     pinch_command,
 )
+from .motion_metrics import MotionQualityTracker
 from .workcell_layout import WorkcellLayout
 
 
 class ContactRichWorld:
-    """MuJoCo contact-rich workcell abstraction for XbotDep V1.
+    """MuJoCo contact-rich workcell abstraction for XbotDep V1.1.
 
-    V1 body convention:
-    - robot faces +X direction;
-    - left hand operates mainly on positive-Y side and provides support;
-    - right hand operates mainly on negative-Y side and handles tools/fine motion;
-    - large covers/modules require explicit bimanual actions.
-
-    V1.1 adds structured workcell zones and staged hand trajectories. The goal is
-    not just to make the FSM complete, but to make the movement pattern readable:
-    home -> safe overhead -> zone approach -> grasp/place -> standby.
+    V1.1 is the quality-refinement baseline after V1 reached DONE.
+    It adds structured workcell zones, staged trajectories, and motion metrics
+    so that the behavior is measurable instead of merely visually inspected.
     """
 
     PARTS = [
@@ -82,6 +77,7 @@ class ContactRichWorld:
         self.torque_records: Dict[str, float] = {}
         self.locked_body_positions: Dict[str, np.ndarray] = {}
         self.last_contact_events = []
+        self.metrics = MotionQualityTracker()
         self.reset()
 
     def _build_free_qpos_map(self, body_names):
@@ -119,6 +115,7 @@ class ContactRichWorld:
         self.torque_records.clear()
         self.locked_body_positions.clear()
         self.last_contact_events.clear()
+        self.metrics = MotionQualityTracker()
         self.set_hand_pose("left", self.staging("left_home_m", [-0.20, 0.28, 0.94]))
         self.set_hand_pose("right", self.staging("right_home_m", [-0.20, -0.28, 0.94]))
         self.open_hand("left")
@@ -131,7 +128,10 @@ class ContactRichWorld:
 
     def set_hand_pose(self, side: str, xyz: Iterable[float]):
         mid = self.left_mocap if side == "left" else self.right_mocap
-        self.data.mocap_pos[mid] = np.asarray(xyz, dtype=float)
+        xyz = np.asarray(xyz, dtype=float)
+        self.data.mocap_pos[mid] = xyz
+        if hasattr(self, "metrics"):
+            self.metrics.observe_hand_position(side, xyz)
 
     def hand_pos(self, side: str):
         return self.site_pos(f"{side}_palm_site")
@@ -147,14 +147,16 @@ class ContactRichWorld:
             self._sync_locked_bodies()
             self.step(1)
 
-    def move_hand_via(self, side: str, waypoints: Iterable[Iterable[float]], duration_each: float = 0.18):
+    def move_hand_via(self, side: str, waypoints: Iterable[Iterable[float]], duration_each: float = 0.18, label: str = "staged_path"):
+        waypoints = [np.asarray(w, dtype=float) for w in waypoints]
+        self.metrics.command_move(side, label=label, waypoints=len(waypoints))
         for waypoint in waypoints:
             self.move_hand_to(side, waypoint, duration=duration_each)
 
     def move_hand_home(self, side: str):
         key = "left_home_m" if side == "left" else "right_home_m"
         default = [-0.20, 0.28, 0.94] if side == "left" else [-0.20, -0.28, 0.94]
-        self.move_hand_via(side, [self.safe_overhead(self.hand_pos(side)), self.staging(key, default)], duration_each=0.16)
+        self.move_hand_via(side, [self.safe_overhead(self.hand_pos(side)), self.staging(key, default)], duration_each=0.16, label="home_return")
 
     def move_hand_standby(self, side: str, role: str = "manipulation"):
         if side == "left":
@@ -166,7 +168,7 @@ class ContactRichWorld:
         else:
             key = "right_manipulation_standby_m"
             default = [0.02, -0.20, 0.94]
-        self.move_hand_via(side, [self.safe_overhead(self.hand_pos(side)), self.staging(key, default)], duration_each=0.16)
+        self.move_hand_via(side, [self.safe_overhead(self.hand_pos(side)), self.staging(key, default)], duration_each=0.16, label=f"{role}_standby")
 
     def _hand_command(self, cmd):
         for name, value in cmd.actuator_targets().items():
@@ -175,6 +177,7 @@ class ContactRichWorld:
 
     def open_hand(self, side: str):
         self._hand_command(open_command(side))
+        self.metrics.posture(side, "open")
         self.step(10)
 
     def close_hand(self, side: str, mode: str = "power"):
@@ -186,6 +189,7 @@ class ContactRichWorld:
             self._hand_command(pinch_command(side))
         else:
             self._hand_command(power_grasp_command(side))
+        self.metrics.posture(side, mode)
         self.step(25)
 
     def step(self, n: int = 1):
@@ -245,10 +249,11 @@ class ContactRichWorld:
         object_pos = self.body_pos(obj)
         approach = object_pos + np.array([0.0, 0.0, 0.08])
         grasp = object_pos + np.array([0.0, 0.0, 0.035])
-        self.move_hand_via(hand, [self.safe_overhead(self.hand_pos(hand)), self.safe_overhead(object_pos), approach, grasp], duration_each=0.14)
+        self.move_hand_via(hand, [self.safe_overhead(self.hand_pos(hand)), self.safe_overhead(object_pos), approach, grasp], duration_each=0.14, label=f"grasp:{obj}")
         self.close_hand(hand, mode)
         self.holding[hand] = obj
         self._sync_held_objects()
+        self.metrics.grasp(hand, obj, mode)
         self.last_contact_events.append({"hand": hand, "object": obj, "mode": mode, "event": "grasp_latched"})
 
     def clear_hands_holding(self, obj: str):
@@ -261,7 +266,7 @@ class ContactRichWorld:
 
     def release_object(self, hand: str, obj: str, target):
         target = np.asarray(target, dtype=float)
-        self.move_hand_via(hand, [self.safe_overhead(self.hand_pos(hand)), self.safe_overhead(target), target + np.array([0.0, 0.0, 0.05])], duration_each=0.14)
+        self.move_hand_via(hand, [self.safe_overhead(self.hand_pos(hand)), self.safe_overhead(target), target + np.array([0.0, 0.0, 0.05])], duration_each=0.14, label=f"release:{obj}")
         released_hands = self.clear_hands_holding(obj)
         if hand not in released_hands:
             released_hands.append(hand)
@@ -275,6 +280,7 @@ class ContactRichWorld:
             self.move_hand_standby(released_hand, role="tool" if obj == "screwdriver" else "manipulation")
         self._sync_locked_bodies()
         self.mujoco.mj_forward(self.model, self.data)
+        self.metrics.release(released_hands, obj)
         self.last_contact_events.append({"hands": released_hands, "object": obj, "event": "released_at_target"})
 
     def install_error_mm(self, part: str):
@@ -298,8 +304,8 @@ class ContactRichWorld:
             return False
         screw_bin = self.site_pos("screw_bin")
         part_target = self.site_pos(self.part_targets[part])
-        self.move_hand_via("right", [self.safe_overhead(self.hand_pos("right")), self.safe_overhead(screw_bin), screw_bin + np.array([0.0, 0.0, 0.05])], duration_each=0.12)
-        self.move_hand_via("right", [self.safe_overhead(screw_bin), self.safe_overhead(part_target), part_target + np.array([0.025, -0.025, 0.08])], duration_each=0.12)
+        self.move_hand_via("right", [self.safe_overhead(self.hand_pos("right")), self.safe_overhead(screw_bin), screw_bin + np.array([0.0, 0.0, 0.05])], duration_each=0.12, label="screw_feed")
+        self.move_hand_via("right", [self.safe_overhead(screw_bin), self.safe_overhead(part_target), part_target + np.array([0.025, -0.025, 0.08])], duration_each=0.12, label=f"drive:{part}")
         self.step(20)
         self.consumed_screws.add(screw)
         self.torque_records[screw] = float(np.random.uniform(0.43, 0.66))
@@ -311,14 +317,24 @@ class ContactRichWorld:
         right_pick = np.array([0.18, -0.10, 0.92])
         left_drop = np.array([0.52, 0.10, 0.92])
         right_drop = np.array([0.52, -0.10, 0.92])
-        self.move_hand_via("left", [self.safe_overhead(self.hand_pos("left")), self.safe_overhead(left_pick), left_pick], duration_each=0.16)
-        self.move_hand_via("right", [self.safe_overhead(self.hand_pos("right")), self.safe_overhead(right_pick), right_pick], duration_each=0.16)
+        self.move_hand_via("left", [self.safe_overhead(self.hand_pos("left")), self.safe_overhead(left_pick), left_pick], duration_each=0.16, label="case_pick_left")
+        self.move_hand_via("right", [self.safe_overhead(self.hand_pos("right")), self.safe_overhead(right_pick), right_pick], duration_each=0.16, label="case_pick_right")
         self.close_hand("left", mode="support")
         self.close_hand("right", mode="support")
-        self.move_hand_via("left", [self.safe_overhead(left_pick), self.safe_overhead(left_drop), left_drop], duration_each=0.18)
-        self.move_hand_via("right", [self.safe_overhead(right_pick), self.safe_overhead(right_drop), right_drop], duration_each=0.18)
+        self.move_hand_via("left", [self.safe_overhead(left_pick), self.safe_overhead(left_drop), left_drop], duration_each=0.18, label="case_transfer_left")
+        self.move_hand_via("right", [self.safe_overhead(right_pick), self.safe_overhead(right_drop), right_drop], duration_each=0.18, label="case_transfer_right")
         self.open_hand("left")
         self.open_hand("right")
         self.move_hand_home("left")
         self.move_hand_home("right")
         return True
+
+    def quality_summary(self) -> dict:
+        summary = self.metrics.summary()
+        summary.update({
+            "installed_parts": sorted(self.installed_parts),
+            "fastened_parts": sorted(self.fastened_parts),
+            "consumed_screws": sorted(self.consumed_screws),
+            "locked_part_count": len(self.locked_body_positions),
+        })
+        return summary
