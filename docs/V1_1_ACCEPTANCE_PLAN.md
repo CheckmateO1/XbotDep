@@ -1,9 +1,9 @@
 # XbotDep V1.1 Acceptance Plan
 
-Current active version:
+Current frozen version:
 
 ```text
-V1.1.3 Dexterous Manipulation Quality Completion
+V1.1.4 Final Acceptance Freeze
 ```
 
 V1.1 is an engineering simulation baseline, not V2 learned control.
@@ -41,7 +41,7 @@ Completed:
 
 ### V1.1.3 — Dexterous Manipulation Quality Completion
 
-Completed in code:
+Completed and user-accepted:
 
 - grasp taxonomy;
 - left/right role policy;
@@ -49,35 +49,53 @@ Completed in code:
 - expanded posture/grasp/release/path metrics;
 - runtime quality gate;
 - runtime quality report validator;
-- one-command full V1.1.3 acceptance script.
+- one-command full V1.1.3 acceptance script;
+- runtime reached SUCCESS=True and DONE;
+- runtime quality gate passed.
 
-## V1.1.3 acceptance commands
+### V1.1.4 — Final Acceptance Freeze
 
-Static acceptance:
+V1.1.4 freezes the accepted V1.1 baseline.
+
+No new manipulation capability is introduced in V1.1.4.
+
+Freeze requirements:
+
+- final version marker;
+- final SOP marker;
+- final acceptance runner;
+- release freeze validator;
+- README final command;
+- roadmap final state;
+- V2-only scope documented.
+
+## Final V1.1 acceptance command
+
+```bash
+python scripts/run_v1_1_4_final_acceptance.py
+```
+
+## Static acceptance command
 
 ```bash
 python scripts/accept_v1_1.py
 ```
 
-Full headless acceptance:
-
-```bash
-python scripts/run_v1_1_3_full_acceptance.py
-```
-
-Viewer acceptance:
+## Viewer acceptance command
 
 ```bash
 python main_v1.py --viewer --realtime
 python scripts/validate_v1_1_3_quality_report.py
+python scripts/validate_v1_1_4_release_freeze.py
 ```
 
-## Required V1.1.3 runtime result
+## Required final runtime result
 
 ```text
 SUCCESS: True
 FINAL STATE: DONE
 QUALITY GATE: {'passed': True, ...}
+V1.1.4 final acceptance passed.
 ```
 
 Required generated artifacts:
@@ -88,7 +106,7 @@ logs/v1_1_fsm_history.json
 models/v1_1_contact_rich_workcell.xml
 ```
 
-## V1.1.3 pass/fail criteria
+## Final V1.1 pass/fail criteria
 
 - SOP reaches DONE.
 - Inventory consumption matches SOP demand.
@@ -100,6 +118,7 @@ models/v1_1_contact_rich_workcell.xml
 - Quality report contains posture, grasp, release and path metrics.
 - Required hand modes appear: support, power, pinch and tool.
 - Generated FSM history exists.
+- Release freeze validator passes.
 
 ## V2-only items
 
