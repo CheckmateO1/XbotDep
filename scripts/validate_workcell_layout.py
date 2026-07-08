@@ -34,13 +34,19 @@ def fail(msg: str):
     raise AssertionError(msg)
 
 
+def contains_xy(zone: dict, point: list[float]) -> bool:
+    center = zone["center_m"]
+    size = zone["size_m"]
+    half_x = float(size[0]) / 2.0
+    half_y = float(size[1]) / 2.0
+    return abs(float(point[0]) - float(center[0])) <= half_x and abs(float(point[1]) - float(center[1])) <= half_y
+
+
 def main():
     from xbotdep.mjcf_factory import CHASSIS_POS, PART_SPECS
-    from xbotdep.workcell_layout import WorkcellLayout
 
     layout_data = json.loads(LAYOUT.read_text(encoding="utf-8"))
     sop = json.loads(SOP.read_text(encoding="utf-8"))
-    layout = WorkcellLayout(layout_data)
 
     zones = layout_data.get("zones", {})
     missing = REQUIRED_ZONES - set(zones)
@@ -77,13 +83,13 @@ def main():
         if rules.get(rule) is not True:
             fail(f"Layout quality rule {rule} must be true")
 
-    fixture = layout.zone("fixture_zone")
+    fixture = zones["fixture_zone"]
     for part, spec in PART_SPECS.items():
-        station_zone = layout.zone(spec["zone"])
-        if not station_zone.contains_xy(spec["station"]):
+        station_zone = zones[spec["zone"]]
+        if not contains_xy(station_zone, spec["station"]):
             fail(f"Station for {part} is outside declared zone {spec['zone']}: {spec['station']}")
         world_target = [CHASSIS_POS[0] + spec["target"][0], CHASSIS_POS[1] + spec["target"][1], CHASSIS_POS[2] + spec["target"][2]]
-        if not fixture.contains_xy(world_target):
+        if not contains_xy(fixture, world_target):
             fail(f"Target for {part} is outside fixture zone: {world_target}")
 
     for zone_name, zone_raw in zones.items():
