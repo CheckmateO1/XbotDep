@@ -23,7 +23,7 @@ LOG_DIR = ROOT / "logs"
 
 
 def run_preflight() -> None:
-    ensure_v1_1_model(MODEL)
+    ensure_v1_1_model(MODEL, force=True)
     checks = [
         ROOT / "scripts" / "validate_python_static.py",
         ROOT / "scripts" / "validate_sop_static.py",
@@ -47,7 +47,7 @@ def main():
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
-    ensure_v1_1_model(MODEL)
+    ensure_v1_1_model(MODEL, force=True)
     if not args.skip_preflight:
         run_preflight()
 
