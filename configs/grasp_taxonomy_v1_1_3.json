@@ -1,0 +1,49 @@
+{
+  "name": "XbotDep V1.1.3 dexterous manipulation grasp taxonomy",
+  "version": "V1.1.3-dexterous-manipulation-quality-completion",
+  "grasp_modes": {
+    "open": {
+      "purpose": "release, transit, and non-contact safe motion",
+      "allowed_hands": ["left", "right"],
+      "semantic_contact": false
+    },
+    "support": {
+      "purpose": "left-hand datum support, chassis stabilization, bimanual balance, and output transfer support",
+      "allowed_hands": ["left", "right"],
+      "semantic_contact": true
+    },
+    "power": {
+      "purpose": "firm grasp for brackets, modules, and case panels",
+      "allowed_hands": ["right"],
+      "semantic_contact": true
+    },
+    "pinch": {
+      "purpose": "front IO cable and small flexible-object manipulation",
+      "allowed_hands": ["right"],
+      "semantic_contact": true
+    },
+    "tool": {
+      "purpose": "screwdriver handle grasp and tool transport",
+      "allowed_hands": ["right"],
+      "semantic_contact": true
+    }
+  },
+  "object_grasp_policy": {
+    "screwdriver": {"required_hand": "right", "required_mode": "tool"},
+    "front_io_cable": {"required_hand": "right", "required_mode": "pinch"},
+    "motherboard_tray_bracket": {"required_hand": "right", "required_mode": "power", "support_hand": "left", "support_mode": "support"},
+    "psu_bracket": {"required_hand": "right", "required_mode": "power", "support_hand": "left", "support_mode": "support"},
+    "dust_filter": {"required_hand": "right", "required_mode": "power", "support_hand": "left", "support_mode": "support"},
+    "front_io_panel": {"required_hand": "right", "required_mode": "power", "support_hand": "left", "support_mode": "support"},
+    "fan_module": {"required_hands": ["left", "right"], "left_mode": "support", "right_mode": "power"},
+    "front_panel": {"required_hands": ["left", "right"], "left_mode": "support", "right_mode": "power"},
+    "top_cover": {"required_hands": ["left", "right"], "left_mode": "support", "right_mode": "power"},
+    "left_side_cover": {"required_hands": ["left", "right"], "left_mode": "support", "right_mode": "power"},
+    "right_side_cover": {"required_hands": ["left", "right"], "left_mode": "support", "right_mode": "power"}
+  },
+  "role_policy": {
+    "left": ["support", "stabilization", "datum_holding", "bimanual_balance"],
+    "right": ["tool_use", "precision_grasp", "screw_feeding", "small_part_manipulation"],
+    "both": ["large_part_alignment", "case_transfer"]
+  }
+}
