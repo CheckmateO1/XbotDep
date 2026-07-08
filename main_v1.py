@@ -12,20 +12,24 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from xbotdep.fsm import SOPFSM
+from xbotdep.mjcf_factory import ensure_v1_1_model
 from xbotdep.skills import build_registry
 from xbotdep.world import ContactRichWorld
 
 
-MODEL = ROOT / "models" / "v1_contact_rich_workcell.xml"
+MODEL = ROOT / "models" / "v1_1_contact_rich_workcell.xml"
 CONFIG = ROOT / "configs" / "sop_v1.json"
 LOG_DIR = ROOT / "logs"
 
 
 def run_preflight() -> None:
+    ensure_v1_1_model(MODEL)
     checks = [
         ROOT / "scripts" / "validate_python_static.py",
         ROOT / "scripts" / "validate_sop_static.py",
         ROOT / "scripts" / "validate_workcell_layout.py",
+        ROOT / "scripts" / "validate_inventory.py",
+        ROOT / "scripts" / "validate_mjcf_structure.py",
     ]
     for script in checks:
         result = subprocess.run([sys.executable, str(script)], cwd=str(ROOT), text=True)
@@ -37,12 +41,13 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--viewer", action="store_true")
     parser.add_argument("--realtime", action="store_true")
-    parser.add_argument("--skip-preflight", action="store_true", help="Skip static SOP/layout/Python validation before MuJoCo run.")
+    parser.add_argument("--skip-preflight", action="store_true")
     parser.add_argument("--quality-report", default=str(LOG_DIR / "v1_1_quality_summary.json"))
     parser.add_argument("--history-report", default=str(LOG_DIR / "v1_1_fsm_history.json"))
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
+    ensure_v1_1_model(MODEL)
     if not args.skip_preflight:
         run_preflight()
 
@@ -63,9 +68,7 @@ def main():
         "version": config.get("version", "unknown"),
     })
 
-    Path(args.quality_report).parent.mkdir(parents=True, exist_ok=True)
     Path(args.quality_report).write_text(json.dumps(quality, indent=2), encoding="utf-8")
-    Path(args.history_report).parent.mkdir(parents=True, exist_ok=True)
     Path(args.history_report).write_text(json.dumps(fsm.export_history(), indent=2), encoding="utf-8")
 
     print("SUCCESS:", success)
@@ -74,7 +77,7 @@ def main():
     print("QUALITY REPORT:", args.quality_report)
     print("FSM HISTORY:", args.history_report)
     print("TOTAL HAND TRAVEL M:", quality.get("total_hand_travel_m"))
-    print("POSTURE COUNTS:", quality.get("posture_counts"))
+    print("INVENTORY:", quality.get("inventory"))
 
     world.close()
 
