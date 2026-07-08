@@ -1,6 +1,6 @@
 {
-  "name": "XbotDep V1.1.1 Structured Workcell PC Case Assembly SOP",
-  "version": "V1.1.1-preflight-packaging-hardening",
+  "name": "XbotDep V1.1.2 Industrial Workcell PC Case Assembly SOP",
+  "version": "V1.1.2-industrial-workcell-model-completion",
   "start_step": "INIT_WORKCELL",
   "done_step": "DONE",
   "limits": {
