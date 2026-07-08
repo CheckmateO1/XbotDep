@@ -13,6 +13,7 @@ from .dexterous_hand import (
     tool_grasp_command,
     pinch_command,
 )
+from .inventory import InventoryManager
 from .motion_metrics import MotionQualityTracker
 from .workcell_layout import WorkcellLayout
 
@@ -20,9 +21,12 @@ from .workcell_layout import WorkcellLayout
 class ContactRichWorld:
     """MuJoCo contact-rich workcell abstraction for XbotDep V1.1.
 
-    V1.1 is the quality-refinement baseline after V1 reached DONE.
-    It adds structured workcell zones, staged trajectories, and motion metrics
-    so that the behavior is measurable instead of merely visually inspected.
+    V1.1 is the final pre-V2 engineering baseline:
+    - structured industrial workcell zones;
+    - runtime material inventory;
+    - staged hand trajectories;
+    - semantic hand postures;
+    - motion quality metrics.
     """
 
     PARTS = [
@@ -40,16 +44,29 @@ class ContactRichWorld:
 
     LARGE_PARTS = {"fan_module", "front_panel", "top_cover", "left_side_cover", "right_side_cover"}
 
-    def __init__(self, xml_path: str | Path, viewer: bool = False, realtime: bool = False, layout_path: str | Path | None = None):
+    def __init__(
+        self,
+        xml_path: str | Path,
+        viewer: bool = False,
+        realtime: bool = False,
+        layout_path: str | Path | None = None,
+        inventory_path: str | Path | None = None,
+    ):
         import mujoco
 
         self.xml_path = Path(xml_path)
         if not self.xml_path.exists():
             raise FileNotFoundError(f"MuJoCo model not found: {self.xml_path}")
+        root = self.xml_path.parent.parent
         if layout_path is None:
-            candidate = self.xml_path.parent.parent / "configs" / "workcell_layout_v1.json"
+            candidate = root / "configs" / "workcell_layout_v1.json"
             layout_path = candidate if candidate.exists() else None
+        if inventory_path is None:
+            candidate = root / "configs" / "inventory_v1_1.json"
+            inventory_path = candidate if candidate.exists() else None
         self.layout = WorkcellLayout.load(layout_path) if layout_path else None
+        self.inventory_path = Path(inventory_path) if inventory_path else None
+        self.inventory = InventoryManager.load(self.inventory_path) if self.inventory_path else None
 
         self.mujoco = mujoco
         self.model = mujoco.MjModel.from_xml_path(str(self.xml_path))
@@ -74,6 +91,7 @@ class ContactRichWorld:
         self.installed_parts = set()
         self.fastened_parts = set()
         self.consumed_screws = set()
+        self.inventory_consumed_parts = set()
         self.torque_records: Dict[str, float] = {}
         self.locked_body_positions: Dict[str, np.ndarray] = {}
         self.last_contact_events = []
@@ -90,6 +108,14 @@ class ContactRichWorld:
             qpos_addr = int(self.model.jnt_qposadr[jnt_id])
             out[name] = qpos_addr
         return out
+
+    def _reload_inventory(self):
+        if self.inventory_path:
+            self.inventory = InventoryManager.load(self.inventory_path)
+
+    def consume_inventory(self, item: str, qty: int = 1, reason: str = "") -> None:
+        if self.inventory is not None:
+            self.inventory.consume(item, qty=qty, reason=reason)
 
     def staging(self, key: str, default):
         if self.layout is not None:
@@ -108,10 +134,12 @@ class ContactRichWorld:
 
     def reset(self):
         self.mujoco.mj_resetData(self.model, self.data)
+        self._reload_inventory()
         self.holding = {"left": None, "right": None}
         self.installed_parts.clear()
         self.fastened_parts.clear()
         self.consumed_screws.clear()
+        self.inventory_consumed_parts.clear()
         self.torque_records.clear()
         self.locked_body_positions.clear()
         self.last_contact_events.clear()
@@ -271,6 +299,9 @@ class ContactRichWorld:
         if hand not in released_hands:
             released_hands.append(hand)
         if obj in self.PARTS:
+            if obj not in self.inventory_consumed_parts:
+                self.consume_inventory(obj, 1, reason="installed_part")
+                self.inventory_consumed_parts.add(obj)
             self.lock_body_at(obj, target)
             self.installed_parts.add(obj)
         else:
@@ -302,6 +333,7 @@ class ContactRichWorld:
             return False
         if screw in self.consumed_screws:
             return False
+        self.consume_inventory("generic_m3_screw", 1, reason=f"drive_{screw}_for_{part}")
         screw_bin = self.site_pos("screw_bin")
         part_target = self.site_pos(self.part_targets[part])
         self.move_hand_via("right", [self.safe_overhead(self.hand_pos("right")), self.safe_overhead(screw_bin), screw_bin + np.array([0.0, 0.0, 0.05])], duration_each=0.12, label="screw_feed")
@@ -336,5 +368,6 @@ class ContactRichWorld:
             "fastened_parts": sorted(self.fastened_parts),
             "consumed_screws": sorted(self.consumed_screws),
             "locked_part_count": len(self.locked_body_positions),
+            "inventory": self.inventory.summary() if self.inventory is not None else None,
         })
         return summary
