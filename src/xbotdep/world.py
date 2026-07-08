@@ -174,7 +174,6 @@ class ContactRichWorld:
         qadr = self.free_qpos_addr[body]
         self.data.qpos[qadr:qadr + 3] = np.asarray(xyz, dtype=float)
         self.data.qpos[qadr + 3:qadr + 7] = np.array([1.0, 0.0, 0.0, 0.0])
-        # Critical: zero velocity, otherwise a released free body keeps its old drift.
         vadr = int(self.model.jnt_dofadr[int(self.model.body(body).jntadr[0])])
         self.data.qvel[vadr:vadr + 6] = 0.0
         if forward:
@@ -197,7 +196,10 @@ class ContactRichWorld:
         return np.array([0.035, 0.0, -0.015])
 
     def _sync_held_objects(self):
-        for side, obj in self.holding.items():
+        # If a part/tool is held by two hands, the most recently commanded right-hand lead
+        # should not fight a locked installed pose. Therefore release_object() clears all
+        # hand references for an object before lock/open steps.
+        for side, obj in list(self.holding.items()):
             if obj and obj in self.free_qpos_addr:
                 self.unlock_body(obj)
                 self.set_free_body_position(obj, self.hand_pos(side) + self.held_offset(side, obj), forward=False)
@@ -213,22 +215,38 @@ class ContactRichWorld:
         self._sync_held_objects()
         self.last_contact_events.append({"hand": hand, "object": obj, "mode": mode, "event": "grasp_latched"})
 
+    def clear_hands_holding(self, obj: str):
+        released = []
+        for hand, held in list(self.holding.items()):
+            if held == obj:
+                self.holding[hand] = None
+                released.append(hand)
+        return released
+
     def release_object(self, hand: str, obj: str, target):
         target = np.asarray(target, dtype=float)
         self.move_hand_to(hand, target + np.array([0.0, 0.0, 0.05]), duration=0.25)
-        self.set_free_body_position(obj, target)
-        self.holding[hand] = None
+
+        # Critical for bimanual large parts: clear ALL hands holding this object before
+        # any step/open command, otherwise the other hand will drag the object away again.
+        released_hands = self.clear_hands_holding(obj)
+        if hand not in released_hands:
+            released_hands.append(hand)
+
         if obj in self.PARTS:
             self.lock_body_at(obj, target)
             self.installed_parts.add(obj)
-        self.open_hand(hand)
+        else:
+            self.set_free_body_position(obj, target)
+
+        for released_hand in released_hands:
+            self.open_hand(released_hand)
         self._sync_locked_bodies()
         self.mujoco.mj_forward(self.model, self.data)
-        self.last_contact_events.append({"hand": hand, "object": obj, "event": "released_at_target"})
+        self.last_contact_events.append({"hands": released_hands, "object": obj, "event": "released_at_target"})
 
     def install_error_mm(self, part: str):
         if part in self.locked_body_positions:
-            # Locked parts are the V1 installed-state truth source.
             return float(np.linalg.norm(self.locked_body_positions[part] - self.site_pos(self.part_targets[part])) * 1000.0)
         return float(np.linalg.norm(self.body_pos(part) - self.site_pos(self.part_targets[part])) * 1000.0)
 
