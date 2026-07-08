@@ -1,0 +1,27 @@
+name: XbotDep V1.1 Preflight
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  static-preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Python syntax validation
+        run: python scripts/validate_python_static.py
+
+      - name: SOP/layout validation
+        run: |
+          python scripts/validate_sop_static.py
+          python scripts/validate_workcell_layout.py
