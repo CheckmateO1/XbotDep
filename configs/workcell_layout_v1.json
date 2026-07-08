@@ -1,34 +1,38 @@
 {
-  "name": "XbotDep V1.1 structured workcell layout",
+  "name": "XbotDep V1.1.2 industrial structured workcell layout",
+  "version": "V1.1.2-industrial-workcell-model-completion",
   "frame_convention": {
     "robot_faces": "+X",
     "left_hand_side": "+Y",
     "right_hand_side": "-Y",
-    "table_center_m": [-0.10, 0.0, 0.735]
+    "table_center_m": [-0.10, 0.0, 0.735],
+    "table_size_m": [1.56, 0.96]
   },
   "zones": {
     "fixture_zone": {
-      "purpose": "fixed empty chassis and assembly datum",
+      "purpose": "fixed empty chassis, clamps, datum pins, and assembly target sites",
       "center_m": [0.12, 0.0, 0.78],
-      "size_m": [0.36, 0.30],
-      "preferred_hands": ["left_support", "right_manipulation"]
+      "size_m": [0.42, 0.36],
+      "preferred_hands": ["left_support", "right_manipulation"],
+      "visuals": ["fixture_zone_visual", "fixture_left_clamp", "fixture_right_clamp", "fixture_datum_pin_a", "fixture_datum_pin_b"]
     },
     "small_part_zone": {
-      "purpose": "small brackets, filters, IO panels",
-      "center_m": [-0.28, 0.02, 0.82],
-      "size_m": [0.24, 0.52],
+      "purpose": "grouped bins for brackets, filters, and front IO panels",
+      "center_m": [-0.25, 0.045, 0.82],
+      "size_m": [0.26, 0.58],
       "preferred_hand": "right",
       "capacity": {
         "motherboard_tray_bracket": 20,
         "psu_bracket": 20,
         "dust_filter": 30,
         "front_io_panel": 30
-      }
+      },
+      "visuals": ["small_part_zone_visual", "small_bin_motherboard_tray_bracket", "small_bin_psu_bracket", "small_bin_dust_filter", "small_bin_front_io_panel"]
     },
     "large_panel_zone": {
-      "purpose": "large modules and covers requiring bimanual handling",
-      "center_m": [-0.42, 0.02, 0.82],
-      "size_m": [0.30, 0.52],
+      "purpose": "vertical/angled rack for large modules and case panels requiring bimanual handling",
+      "center_m": [-0.47, 0.0, 0.82],
+      "size_m": [0.34, 0.58],
       "preferred_hands": ["left", "right"],
       "capacity": {
         "fan_module": 20,
@@ -36,41 +40,46 @@
         "top_cover": 20,
         "left_side_cover": 20,
         "right_side_cover": 20
-      }
+      },
+      "visuals": ["large_panel_zone_visual", "large_panel_rack_back", "large_panel_rack_left_rail", "large_panel_rack_right_rail"]
     },
     "screw_bin_zone": {
-      "purpose": "bulk screw supply",
+      "purpose": "bulk screw feeder/bin with visual screw sample grid",
       "center_m": [-0.05, 0.34, 0.79],
-      "size_m": [0.24, 0.12],
+      "size_m": [0.28, 0.14],
       "preferred_hand": "right",
       "capacity": {
         "generic_m3_screw": 200
-      }
+      },
+      "visuals": ["screw_bin_zone_visual", "screw_feeder_wall_back", "screw_feeder_wall_front", "screw_feeder_wall_left", "screw_feeder_wall_right"]
     },
     "cable_zone": {
-      "purpose": "front IO cable supply",
-      "center_m": [-0.40, 0.26, 0.82],
-      "size_m": [0.16, 0.12],
+      "purpose": "front IO cable rack with bundled cable storage",
+      "center_m": [-0.46, 0.28, 0.82],
+      "size_m": [0.18, 0.12],
       "preferred_hand": "right_pinch",
       "capacity": {
         "front_io_cable": 50
-      }
+      },
+      "visuals": ["cable_zone_visual", "cable_rack_back", "cable_bundle_a", "cable_bundle_b"]
     },
     "tool_zone": {
-      "purpose": "screwdrivers and drills",
+      "purpose": "tool rack for screwdriver and electric drill placeholder",
       "center_m": [-0.05, -0.34, 0.80],
-      "size_m": [0.24, 0.10],
+      "size_m": [0.28, 0.14],
       "preferred_hand": "right",
       "tools": {
         "screwdriver": 1,
         "electric_drill_placeholder": 1
-      }
+      },
+      "visuals": ["tool_zone_visual", "tool_rack_back", "tool_slot_screwdriver", "tool_slot_drill", "electric_drill_placeholder"]
     },
     "output_zone": {
-      "purpose": "completed case handoff",
+      "purpose": "completed case handoff area with output conveyor visual",
       "center_m": [0.52, 0.0, 0.80],
-      "size_m": [0.40, 0.32],
-      "preferred_hands": ["left", "right"]
+      "size_m": [0.42, 0.34],
+      "preferred_hands": ["left", "right"],
+      "visuals": ["output_zone", "output_conveyor_base", "output_roller_01", "output_roller_02", "output_roller_03"]
     }
   },
   "hand_staging": {
@@ -88,6 +97,9 @@
     "large_parts_require_both_hands_free": true,
     "right_hand_only_for_screwdriver": true,
     "return_tool_before_next_material_pick": true,
-    "avoid_straight_line_table_sweeps": true
+    "avoid_straight_line_table_sweeps": true,
+    "station_sites_must_be_inside_declared_zones": true,
+    "target_sites_must_be_inside_fixture_zone": true,
+    "workcell_visuals_must_exist_in_mjcf": true
   }
 }
