@@ -1,0 +1,18 @@
+{
+  "name": "XbotDep V1.1 runtime inventory",
+  "items": {
+    "motherboard_tray_bracket": {"zone": "small_part_zone", "capacity": 20, "initial": 20, "unit": "piece"},
+    "psu_bracket": {"zone": "small_part_zone", "capacity": 20, "initial": 20, "unit": "piece"},
+    "dust_filter": {"zone": "small_part_zone", "capacity": 30, "initial": 30, "unit": "piece"},
+    "front_io_panel": {"zone": "small_part_zone", "capacity": 30, "initial": 30, "unit": "piece"},
+    "fan_module": {"zone": "large_panel_zone", "capacity": 20, "initial": 20, "unit": "piece"},
+    "front_panel": {"zone": "large_panel_zone", "capacity": 20, "initial": 20, "unit": "piece"},
+    "top_cover": {"zone": "large_panel_zone", "capacity": 20, "initial": 20, "unit": "piece"},
+    "left_side_cover": {"zone": "large_panel_zone", "capacity": 20, "initial": 20, "unit": "piece"},
+    "right_side_cover": {"zone": "large_panel_zone", "capacity": 20, "initial": 20, "unit": "piece"},
+    "front_io_cable": {"zone": "cable_zone", "capacity": 50, "initial": 50, "unit": "piece"},
+    "generic_m3_screw": {"zone": "screw_bin_zone", "capacity": 200, "initial": 200, "unit": "piece"},
+    "screwdriver": {"zone": "tool_zone", "capacity": 1, "initial": 1, "unit": "tool"},
+    "electric_drill_placeholder": {"zone": "tool_zone", "capacity": 1, "initial": 1, "unit": "tool"}
+  }
+}
