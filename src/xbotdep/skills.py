@@ -26,6 +26,14 @@ def tolerance_mm(ctx, part: str) -> float:
     return float(limits.get("cover_pose_tolerance_mm" if part in cover_parts else "part_pose_tolerance_mm", 8.0))
 
 
+def _right_hand_free_for_material(w: ContactRichWorld) -> bool:
+    return w.holding.get("right") is None
+
+
+def _both_hands_free_for_large_part(w: ContactRichWorld) -> bool:
+    return w.holding.get("left") is None and w.holding.get("right") is None
+
+
 # ---------------------------------------------------------------------------
 # Human-like hand role policy
 # ---------------------------------------------------------------------------
@@ -42,7 +50,8 @@ def init_workcell(ctx: Dict[str, Any]):
         "workcell_ready": True,
         "stations_verified": False,
         "screwdriver_acquired": False,
-        "screwdriver_returned": False,
+        "screwdriver_parked": True,
+        "screwdriver_returned": True,
         "front_io_cable_routed": False,
         "case_in_output_zone": False,
         "final_quality_passed": False,
@@ -68,8 +77,13 @@ def acquire_tool(ctx, tool: str, hand: str):
         return fail(f"Unsupported tool in V1: {tool}")
     if hand != "right":
         return fail("V1 role violation: screwdriver must be acquired by right hand.")
-    success = world(ctx).acquire_screwdriver()
+    w = world(ctx)
+    if w.holding.get("right") is not None:
+        return fail(f"Right hand is occupied by {w.holding.get('right')}; cannot acquire screwdriver")
+    success = w.acquire_screwdriver()
     ctx["screwdriver_acquired"] = success
+    ctx["screwdriver_parked"] = not success
+    ctx["screwdriver_returned"] = False if success else ctx.get("screwdriver_returned", False)
     ctx["active_tool"] = "screwdriver" if success else None
     return ok("Right hand acquired screwdriver from tool station.") if success else fail("Cannot acquire screwdriver.")
 
@@ -99,17 +113,23 @@ def install_part_bimanual(ctx, part: str, mode: str):
     if violation:
         return fail(violation)
 
+    if mode == "bimanual_large_part":
+        if not _both_hands_free_for_large_part(w):
+            return fail(f"Cannot handle large part {part}; hands occupied: {w.holding}")
+    else:
+        if not _right_hand_free_for_material(w):
+            return fail(f"Cannot install {part}; right hand occupied by {w.holding.get('right')}")
+
     ctx["active_part"] = part
     target = w.site_pos(w.part_targets[part])
     if mode == "bimanual_large_part":
         w.grasp_object("left", part, mode="support")
         w.grasp_object("right", part, mode="power")
-        # right hand leads final placement while left provides support.
         w.move_hand_to("left", target + np.array([-0.02, 0.09, 0.08]), duration=0.30)
         w.release_object("right", part, target)
+        w.holding["left"] = None
         w.open_hand("left")
     else:
-        # Human-like division: left stabilizes chassis/target datum, right manipulates part.
         w.move_hand_to("left", target + np.array([-0.04, 0.09, 0.07]), duration=0.25)
         w.close_hand("left", mode="support")
         w.grasp_object("right", part, mode="power")
@@ -140,6 +160,8 @@ def route_cable(ctx, cable: str):
     w = world(ctx)
     if cable != "front_io_cable":
         return fail(f"Unsupported cable in V1: {cable}")
+    if not _right_hand_free_for_material(w):
+        return fail(f"Cannot route cable; right hand occupied by {w.holding.get('right')}")
     violation = _check_install_prerequisite(w, cable)
     if violation:
         return fail(violation)
@@ -153,6 +175,9 @@ def route_cable(ctx, cable: str):
 
 
 def install_side_covers(ctx):
+    w = world(ctx)
+    if not _both_hands_free_for_large_part(w):
+        return fail(f"Cannot install side covers; hands occupied: {w.holding}")
     for part in ["left_side_cover", "right_side_cover"]:
         result = install_part_bimanual(ctx, part, "bimanual_large_part")
         if not result.ok:
@@ -179,10 +204,15 @@ def fasten_covers(ctx, screws):
 def return_tool(ctx, tool, hand):
     if tool != "screwdriver" or hand != "right":
         return fail("V1 role violation: right hand must return screwdriver")
-    success = world(ctx).return_screwdriver()
+    w = world(ctx)
+    if w.holding.get("right") != "screwdriver":
+        return fail(f"Cannot return screwdriver; right hand holds {w.holding.get('right')}")
+    success = w.return_screwdriver()
+    ctx["screwdriver_acquired"] = False
+    ctx["screwdriver_parked"] = success
     ctx["screwdriver_returned"] = success
     ctx["active_tool"] = None
-    return ok("Screwdriver returned to tool rack.") if success else fail("Failed to return screwdriver")
+    return ok("Screwdriver returned to tool rack; right hand is free.") if success else fail("Failed to return screwdriver")
 
 
 def final_quality_inspection(ctx):
@@ -191,11 +221,17 @@ def final_quality_inspection(ctx):
     torque_min = float(ctx.get("config", {}).get("limits", {}).get("torque_min_nm", 0.4))
     torque_max = float(ctx.get("config", {}).get("limits", {}).get("torque_max_nm", 0.7))
     bad_torque = {s: t for s, t in w.torque_records.items() if not (torque_min <= t <= torque_max)}
-    ok_quality = len(missing) == 0 and len(w.consumed_screws) >= 12 and len(bad_torque) == 0 and bool(ctx.get("screwdriver_returned"))
+    ok_quality = (
+        len(missing) == 0
+        and len(w.consumed_screws) >= 12
+        and len(bad_torque) == 0
+        and bool(ctx.get("screwdriver_parked"))
+        and w.holding.get("right") is None
+    )
     ctx["final_quality_passed"] = ok_quality
     ctx["missing_parts"] = missing
     ctx["bad_torque"] = bad_torque
-    return ok("Final QC passed: parts, screws, torques, tool return all verified.") if ok_quality else fail(f"QC failed: missing={missing}, bad_torque={bad_torque}")
+    return ok("Final QC passed: parts, screws, torques, tool return all verified.") if ok_quality else fail(f"QC failed: missing={missing}, bad_torque={bad_torque}, holding={w.holding}")
 
 
 def transfer_finished_case(ctx):
@@ -208,11 +244,13 @@ def transfer_finished_case(ctx):
 
 def recover_to_safe_pose(ctx):
     w = world(ctx)
-    w.open_hand("left")
-    w.open_hand("right")
+    if w.holding.get("left") is None:
+        w.open_hand("left")
+    if w.holding.get("right") is None:
+        w.open_hand("right")
     w.move_hand_to("left", [-0.20, 0.28, 0.94], duration=0.20)
     w.move_hand_to("right", [-0.20, -0.28, 0.94], duration=0.20)
-    return ok("Recovered both hands to safe pose.")
+    return ok("Recovered both hands to safe pose without corrupting held-object state.")
 
 
 def recover_tool_acquisition(ctx):
@@ -220,15 +258,26 @@ def recover_tool_acquisition(ctx):
 
 
 def recover_part_installation(ctx):
+    w = world(ctx)
+    # Do not silently overwrite a tool/part; clear only non-tool temporary part latches.
+    for hand, obj in list(w.holding.items()):
+        if obj is not None and obj != "screwdriver":
+            w.holding[hand] = None
     return recover_to_safe_pose(ctx)
 
 
 def recover_fastening(ctx):
+    w = world(ctx)
+    if w.holding.get("right") is None:
+        # Fastening recovery may reacquire the screwdriver because the next retry expects it.
+        w.acquire_screwdriver()
+        ctx["screwdriver_acquired"] = True
+        ctx["screwdriver_parked"] = False
     return recover_to_safe_pose(ctx)
 
 
 def recover_cable_routing(ctx):
-    return recover_to_safe_pose(ctx)
+    return recover_part_installation(ctx)
 
 
 def recover_tool_return(ctx):
@@ -254,8 +303,9 @@ def build_registry():
     conditions = {
         "workcell_ready": lambda c: bool(c.get("workcell_ready")),
         "stations_verified": lambda c: bool(c.get("stations_verified")),
-        "screwdriver_acquired": lambda c: bool(c.get("screwdriver_acquired")),
-        "screwdriver_returned": lambda c: bool(c.get("screwdriver_returned")),
+        "screwdriver_acquired": lambda c: bool(c.get("screwdriver_acquired")) and world(c).holding.get("right") == "screwdriver",
+        "screwdriver_parked": lambda c: bool(c.get("screwdriver_parked")) and world(c).holding.get("right") is None,
+        "screwdriver_returned": lambda c: bool(c.get("screwdriver_returned")) and world(c).holding.get("right") is None,
         "front_io_cable_routed": lambda c: bool(c.get("front_io_cable_routed")),
         "final_quality_passed": lambda c: bool(c.get("final_quality_passed")),
         "case_in_output_zone": lambda c: bool(c.get("case_in_output_zone")),
