@@ -34,6 +34,7 @@ def run_preflight() -> None:
         ROOT / "scripts" / "validate_inventory.py",
         ROOT / "scripts" / "validate_mjcf_structure.py",
         ROOT / "scripts" / "validate_v1_1_3_quality_contract.py",
+        ROOT / "scripts" / "validate_v1_1_4_release_freeze.py",
     ]
     for script in checks:
         result = subprocess.run([sys.executable, str(script)], cwd=str(ROOT), text=True)
