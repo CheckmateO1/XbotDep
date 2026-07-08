@@ -27,6 +27,7 @@ LOG_DIR = ROOT / "logs"
 def run_preflight() -> None:
     ensure_v1_1_model(MODEL, force=True)
     checks = [
+        ROOT / "scripts" / "validate_version_consistency.py",
         ROOT / "scripts" / "validate_python_static.py",
         ROOT / "scripts" / "validate_sop_static.py",
         ROOT / "scripts" / "validate_workcell_layout.py",
@@ -57,41 +58,42 @@ def main():
 
     config = SOPFSM.load_config(CONFIG)
     world = ContactRichWorld(MODEL, viewer=args.viewer, realtime=args.realtime)
-    context = {"world": world, "config": config, "recoveries": 0}
-    fsm = SOPFSM(config, build_registry(), context)
+    try:
+        context = {"world": world, "config": config, "recoveries": 0}
+        fsm = SOPFSM(config, build_registry(), context)
 
-    start = time.time()
-    success = fsm.run()
-    elapsed = time.time() - start
-    quality = world.quality_summary()
-    quality.update({
-        "success": success,
-        "final_state": fsm.current_step_id,
-        "elapsed_sec": round(elapsed, 4),
-        "version": config.get("version", "unknown"),
-    })
+        start = time.time()
+        success = fsm.run()
+        elapsed = time.time() - start
+        quality = world.quality_summary()
+        quality.update({
+            "success": success,
+            "final_state": fsm.current_step_id,
+            "elapsed_sec": round(elapsed, 4),
+            "version": config.get("version", "unknown"),
+        })
 
-    quality_path = Path(args.quality_report)
-    history_path = Path(args.history_report)
-    quality_path.parent.mkdir(parents=True, exist_ok=True)
-    history_path.parent.mkdir(parents=True, exist_ok=True)
-    quality_path.write_text(json.dumps(quality, indent=2), encoding="utf-8")
-    history_path.write_text(json.dumps(fsm.export_history(), indent=2), encoding="utf-8")
+        quality_path = Path(args.quality_report)
+        history_path = Path(args.history_report)
+        quality_path.parent.mkdir(parents=True, exist_ok=True)
+        history_path.parent.mkdir(parents=True, exist_ok=True)
+        quality_path.write_text(json.dumps(quality, indent=2), encoding="utf-8")
+        history_path.write_text(json.dumps(fsm.export_history(), indent=2), encoding="utf-8")
 
-    gate_result = evaluate_quality_files(quality_path, QUALITY_CONTRACT)
-    quality["v1_1_3_quality_gate"] = gate_result
-    quality_path.write_text(json.dumps(quality, indent=2), encoding="utf-8")
+        gate_result = evaluate_quality_files(quality_path, QUALITY_CONTRACT)
+        quality["v1_1_3_quality_gate"] = gate_result
+        quality_path.write_text(json.dumps(quality, indent=2), encoding="utf-8")
 
-    print("SUCCESS:", success)
-    print("FINAL STATE:", fsm.current_step_id)
-    print("ELAPSED:", elapsed)
-    print("QUALITY REPORT:", quality_path)
-    print("FSM HISTORY:", history_path)
-    print("TOTAL HAND TRAVEL M:", quality.get("total_hand_travel_m"))
-    print("QUALITY GATE:", gate_result)
-    print("INVENTORY:", quality.get("inventory"))
-
-    world.close()
+        print("SUCCESS:", success)
+        print("FINAL STATE:", fsm.current_step_id)
+        print("ELAPSED:", elapsed)
+        print("QUALITY REPORT:", quality_path)
+        print("FSM HISTORY:", history_path)
+        print("TOTAL HAND TRAVEL M:", quality.get("total_hand_travel_m"))
+        print("QUALITY GATE:", gate_result)
+        print("INVENTORY:", quality.get("inventory"))
+    finally:
+        world.close()
 
 
 if __name__ == "__main__":
