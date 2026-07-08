@@ -1,73 +1,113 @@
 # XbotDep V1.1 Acceptance Plan
 
-V1 proved that the complete SOP can execute to DONE.
+Current active version:
 
-V1.1 focuses on operational quality, not new AI capability.
+```text
+V1.1.3 Dexterous Manipulation Quality Completion
+```
 
-## Goals
+V1.1 is an engineering simulation baseline, not V2 learned control.
 
-### 1. Workcell structure
+V1.1 acceptance requires structured workcell modeling, deterministic SOP execution, inventory accounting, staged bimanual manipulation, dexterous hand semantics, motion quality metrics, and quality gates.
 
-- Explicit fixture zone.
-- Small-part zone.
-- Large-panel zone.
-- Screw bin zone with bulk capacity model.
-- Cable zone with inventory model.
-- Tool zone.
-- Output zone.
+## Completed V1.1 stages
 
-### 2. Motion quality
+### V1.1.1 — Preflight and Packaging Hardening
 
-Reject:
+Completed:
 
-- long uncontrolled straight sweeps;
-- random hand oscillation;
-- unnecessary table crossing;
-- tool/part hand conflicts.
+- version consistency validation;
+- Python static validation;
+- SOP validation;
+- workcell layout validation;
+- inventory validation;
+- MJCF structure validation;
+- deterministic model generation;
+- runtime baseline acceptance.
 
-Require:
+### V1.1.2 — Industrial Workcell Model Completion
 
-- home pose;
-- safe overhead motion;
-- zone approach;
-- grasp pose;
-- manipulation;
-- standby return.
+Completed:
 
-### 3. Hand coordination
+- fixture zone;
+- small-part bins;
+- large-panel rack;
+- screw feeder/bin;
+- cable rack;
+- tool rack with screwdriver and drill placeholder;
+- output conveyor;
+- station-to-zone layout validation;
+- layout visual validation against generated MJCF.
 
-Left hand:
+### V1.1.3 — Dexterous Manipulation Quality Completion
 
-- support;
-- stabilization;
-- datum holding;
-- large-part balance.
+Completed in code:
 
-Right hand:
+- grasp taxonomy;
+- left/right role policy;
+- motion quality contract;
+- expanded posture/grasp/release/path metrics;
+- runtime quality gate;
+- runtime quality report validator;
+- one-command full V1.1.3 acceptance script.
 
-- precision manipulation;
-- screwdriver/drill operation;
-- screw feeding;
-- small-part placement.
+## V1.1.3 acceptance commands
 
-Both hands:
+Static acceptance:
 
-- fan module;
-- front panel;
-- top cover;
-- side cover alignment.
+```bash
+python scripts/accept_v1_1.py
+```
 
-## V1.1 acceptance checks
+Full headless acceptance:
 
-Before V2/PPO:
+```bash
+python scripts/run_v1_1_3_full_acceptance.py
+```
 
-- [ ] SOP still reaches DONE.
-- [ ] Layout validation passes.
-- [ ] Material capacities satisfy SOP demand.
-- [ ] No action violates hand/tool role policy.
-- [ ] Hand travel distance decreases compared with V1 baseline.
-- [ ] Large-part motions are visibly bimanual and coordinated.
-- [ ] Tool is parked before material handling.
-- [ ] Logs include motion quality metrics.
+Viewer acceptance:
 
-V2 starts only after V1.1 passes these checks.
+```bash
+python main_v1.py --viewer --realtime
+python scripts/validate_v1_1_3_quality_report.py
+```
+
+## Required V1.1.3 runtime result
+
+```text
+SUCCESS: True
+FINAL STATE: DONE
+QUALITY GATE: {'passed': True, ...}
+```
+
+Required generated artifacts:
+
+```text
+logs/v1_1_quality_summary.json
+logs/v1_1_fsm_history.json
+models/v1_1_contact_rich_workcell.xml
+```
+
+## V1.1.3 pass/fail criteria
+
+- SOP reaches DONE.
+- Inventory consumption matches SOP demand.
+- Tool is returned before final inspection.
+- Workcell layout validation passes.
+- MJCF structure validation passes.
+- Grasp taxonomy validation passes.
+- Runtime quality gate passes.
+- Quality report contains posture, grasp, release and path metrics.
+- Required hand modes appear: support, power, pinch and tool.
+- Generated FSM history exists.
+
+## V2-only items
+
+The following are intentionally not V1.1 requirements:
+
+- PPO policy training;
+- learned contact policy;
+- force/torque optimization;
+- perception and calibration;
+- sim-to-real bridge;
+- real robot deployment.
