@@ -1,14 +1,16 @@
-# XbotDep V1.1.3 — Dexterous Manipulation Quality Baseline
+# XbotDep V1.1.4 — Final Acceptance Freeze
 
-This repository contains the V1.1 development line of the humanoid PC-case assembly project.
+This repository contains the frozen V1.1 engineering baseline of the humanoid PC-case assembly project.
 
 Current version:
 
 ```text
-V1.1.3 Dexterous Manipulation Quality Completion
+V1.1.4 Final Acceptance Freeze
 ```
 
-V1.1.3 builds on the V1.1.2 industrial workcell baseline and adds a manipulation-quality layer:
+V1.1.4 freezes the V1.1.3 manipulation-quality baseline and does not introduce new functional scope.
+
+The frozen V1.1 baseline includes:
 
 - structured industrial workcell in MuJoCo;
 - finite-state SOP controller;
@@ -17,9 +19,9 @@ V1.1.3 builds on the V1.1.2 industrial workcell baseline and adds a manipulation
 - staged bimanual motion;
 - motion quality metrics;
 - runtime quality gate;
-- static and runtime acceptance scripts.
+- final static/runtime acceptance scripts.
 
-V1.1.3 is still a scripted engineering simulation baseline. PPO, learned contact policies, perception and sim-to-real transfer are V2 scope.
+V1.1.4 is still a scripted engineering simulation baseline. PPO, learned contact policies, perception, force control and sim-to-real transfer are V2 scope.
 
 ## Setup
 
@@ -30,7 +32,31 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-## Static acceptance
+## Final V1.1 acceptance
+
+Run the final frozen V1.1 acceptance gate:
+
+```bash
+python scripts/run_v1_1_4_final_acceptance.py
+```
+
+This runs:
+
+- static acceptance;
+- full runtime SOP execution;
+- runtime quality report validation;
+- V1.1.4 release freeze validation.
+
+Expected runtime result:
+
+```text
+SUCCESS: True
+FINAL STATE: DONE
+QUALITY GATE: {'passed': True, ...}
+V1.1.4 final acceptance passed.
+```
+
+## Static acceptance only
 
 ```bash
 python scripts/accept_v1_1.py
@@ -44,29 +70,15 @@ This checks:
 - workcell layout;
 - inventory;
 - MJCF structure;
-- V1.1.3 grasp and motion quality contract.
+- V1.1.3 grasp and motion quality contract;
+- V1.1.4 release freeze consistency.
 
-## Full V1.1.3 acceptance
-
-Headless full acceptance:
-
-```bash
-python scripts/run_v1_1_3_full_acceptance.py
-```
-
-Viewer acceptance:
+## Viewer acceptance
 
 ```bash
 python main_v1.py --viewer --realtime
 python scripts/validate_v1_1_3_quality_report.py
-```
-
-Expected runtime result:
-
-```text
-SUCCESS: True
-FINAL STATE: DONE
-QUALITY GATE: {'passed': True, ...}
+python scripts/validate_v1_1_4_release_freeze.py
 ```
 
 Generated files:
@@ -77,7 +89,7 @@ logs/v1_1_fsm_history.json
 models/v1_1_contact_rich_workcell.xml
 ```
 
-## V1.1.3 SOP summary
+## V1.1 frozen SOP summary
 
 1. initialize structured workstation;
 2. verify material, screw, cable, tool and fixture zones;
@@ -116,9 +128,10 @@ src/xbotdep/
 └── quality_gate.py
 scripts/
 ├── accept_v1_1.py
-├── run_v1_1_3_full_acceptance.py
+├── run_v1_1_4_final_acceptance.py
 ├── validate_v1_1_3_quality_contract.py
-└── validate_v1_1_3_quality_report.py
+├── validate_v1_1_3_quality_report.py
+└── validate_v1_1_4_release_freeze.py
 ```
 
 ## V2-only targets
