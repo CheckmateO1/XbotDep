@@ -1,6 +1,6 @@
 # XbotDep V1.1 Iteration Roadmap
 
-This document defines the remaining roadmap to reach 100% completion of V1.1 scope.
+This document defines the roadmap and freeze boundary for the completed V1.1 scope.
 
 ## Scope definition
 
@@ -18,9 +18,9 @@ It does not mean final sim-to-real robotics. PPO contact policies, perception, f
 
 ## Current Stage
 
-Current stage: **V1.1.3 Dexterous Manipulation Quality Completion**
+Current stage: **V1.1.4 Final Acceptance Freeze**
 
-Status: **active development iteration**
+Status: **final freeze iteration**
 
 ## V1.1.1 completed
 
@@ -49,9 +49,9 @@ Completed gates:
 - layout validator checks station-to-zone consistency;
 - runtime reached SUCCESS=True and DONE in user acceptance.
 
-## V1.1.3 Goal
+## V1.1.3 completed
 
-Dexterous manipulation quality completion:
+Completed gates:
 
 - explicit grasp taxonomy;
 - left/right hand role policy;
@@ -60,14 +60,24 @@ Dexterous manipulation quality completion:
 - runtime quality gate after SOP execution;
 - inventory correctness included in quality gate;
 - total hand travel threshold;
-- required support/tool/power/pinch posture thresholds.
+- required support/tool/power/pinch posture thresholds;
+- user-provided full acceptance reached SUCCESS=True, DONE, and quality gate passed.
 
-## Remaining version after V1.1.3
+## V1.1.4 Final Acceptance Freeze
 
-1. **V1.1.4 — Final acceptance freeze**
-   - final regression;
-   - deterministic replay;
-   - runtime acceptance report;
-   - V1.1 release candidate.
+Freeze goals:
+
+- no new functional scope;
+- final version and SOP markers;
+- final acceptance runner;
+- release freeze validator;
+- README and acceptance docs aligned;
+- V2-only scope clearly separated.
+
+## Final V1.1 acceptance command
+
+```bash
+python scripts/run_v1_1_4_final_acceptance.py
+```
 
 After V1.1.4 passes all gates, V1.1 is complete within the defined scope.
