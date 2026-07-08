@@ -10,11 +10,11 @@ Important scope rule:
 
 ## Current Stage
 
-Current stage: **V1.1.0 Foundation / Acceptance-Baseline**
+Current stage: **V1.1.1 Preflight and Packaging Hardening**
 
-Status: **implemented but not final**
+Status: **current active iteration**
 
-Already present:
+Already present from V1.1.0 foundation:
 
 - Full SOP reaches `DONE` in runtime.
 - Structured workcell layout config exists.
@@ -25,19 +25,26 @@ Already present:
 - CI preflight exists.
 - Main runtime writes quality and FSM reports.
 
+V1.1.1 focus:
+
+- All validation scripts run from repo root in a clean environment.
+- Import path handling is robust for local and GitHub Actions environments.
+- CI covers Python, SOP, layout, inventory and MJCF validation.
+- `main_v1.py` runs full preflight before MuJoCo runtime unless explicitly skipped.
+- Generated MJCF is deterministic.
+
 Known gap:
 
-- Current V1.1 is a baseline candidate, not final V1.1.
-- Workcell visual quality, hand choreography, grasp semantics and quantitative acceptance thresholds still need finalization.
+- V1.1.1 hardens the engineering gate, but it is not final V1.1.
+- Workcell visual quality, hand choreography, grasp semantics and quantitative acceptance thresholds are completed in V1.1.2-V1.1.4.
 
 ## Exactly How Many Remaining Versions
 
-From the current stage, V1.1 requires exactly **4 more iteration versions**:
+From the current V1.1.1 stage, V1.1 requires exactly **3 more iteration versions**:
 
-1. `V1.1.1` — Preflight and packaging hardening
-2. `V1.1.2` — Industrial workcell model completion
-3. `V1.1.3` — Manipulation and dexterous hand quality completion
-4. `V1.1.4` — Final acceptance freeze
+1. `V1.1.2` — Industrial workcell model completion
+2. `V1.1.3` — Manipulation and dexterous hand quality completion
+3. `V1.1.4` — Final acceptance freeze
 
 When `V1.1.4` passes its gates, V1.1 is considered **100% complete within the defined V1.1 scope**.
 
@@ -74,7 +81,7 @@ Expected result:
 - no missing file errors;
 - no broken config references.
 
-Status: **in progress**
+Status: **current active iteration**
 
 ---
 
@@ -111,7 +118,7 @@ Expected result:
 - no NaN/Inf MuJoCo instability;
 - robot reach to zones is visually understandable.
 
-Status: **not complete**
+Status: **pending**
 
 ---
 
@@ -164,7 +171,7 @@ Expected result:
 - hand posture counts include support, tool, power and pinch behaviors;
 - motion report is generated and non-empty.
 
-Status: **not complete**
+Status: **pending**
 
 ---
 
@@ -216,7 +223,7 @@ Final V1.1 definition of done:
 - hand role behavior inspectable;
 - V2 limitations documented.
 
-Status: **not started**
+Status: **pending**
 
 ---
 
@@ -224,20 +231,18 @@ Status: **not started**
 
 | Version | Purpose | Status | Exit Condition |
 |---|---|---|---|
-| V1.1.0 | Foundation / acceptance baseline | Current | Already implemented, but not final |
-| V1.1.1 | Preflight and packaging hardening | In progress | CI/preflight/import checks pass |
+| V1.1.0 | Foundation / acceptance baseline | Complete foundation | Baseline implemented |
+| V1.1.1 | Preflight and packaging hardening | Current active iteration | CI/preflight/import checks pass |
 | V1.1.2 | Industrial workcell model completion | Pending | Viewer shows structured workstation |
 | V1.1.3 | Manipulation and hand quality completion | Pending | Quality report and hand behavior pass |
 | V1.1.4 | Final acceptance freeze | Pending | V1.1 declared complete |
 
 ## Current Process Stage
 
-We are currently between:
+We are currently at:
 
 ```text
-V1.1.0 Foundation
-        ↓
 V1.1.1 Preflight and Packaging Hardening
 ```
 
-The immediate next target is **V1.1.1 completion**.
+The immediate next target is **V1.1.1 completion**, followed by **V1.1.2 industrial workcell model completion**.
