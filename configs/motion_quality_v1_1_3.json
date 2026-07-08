@@ -1,0 +1,30 @@
+{
+  "name": "XbotDep V1.1.3 runtime motion quality contract",
+  "version": "V1.1.3-dexterous-manipulation-quality-completion",
+  "thresholds": {
+    "max_total_hand_travel_m": 120.0,
+    "min_grasp_event_count": 15,
+    "min_release_event_count": 12,
+    "min_path_event_count": 40,
+    "min_left_support_postures": 8,
+    "min_right_tool_postures": 4,
+    "min_right_power_postures": 8,
+    "min_right_pinch_postures": 1,
+    "required_posture_keys": ["left:support", "right:tool", "right:power", "right:pinch"],
+    "required_inventory_used": {
+      "generic_m3_screw": 12,
+      "motherboard_tray_bracket": 1,
+      "psu_bracket": 1,
+      "fan_module": 1,
+      "dust_filter": 1,
+      "front_io_panel": 1,
+      "front_io_cable": 1,
+      "front_panel": 1,
+      "top_cover": 1,
+      "left_side_cover": 1,
+      "right_side_cover": 1
+    },
+    "required_success": true,
+    "required_final_state": "DONE"
+  }
+}
