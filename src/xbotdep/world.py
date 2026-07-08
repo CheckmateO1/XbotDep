@@ -13,6 +13,7 @@ from .dexterous_hand import (
     tool_grasp_command,
     pinch_command,
 )
+from .workcell_layout import WorkcellLayout
 
 
 class ContactRichWorld:
@@ -24,11 +25,9 @@ class ContactRichWorld:
     - right hand operates mainly on negative-Y side and handles tools/fine motion;
     - large covers/modules require explicit bimanual actions.
 
-    Important V1 implementation note:
-    Installed parts are locked at target poses after placement. This is deliberate:
-    V1 validates SOP execution, bimanual sequencing, hand-role logic, tool usage,
-    and PPO environment boundaries. V2 will replace selected locked/scripted skills
-    with learned contact policies.
+    V1.1 adds structured workcell zones and staged hand trajectories. The goal is
+    not just to make the FSM complete, but to make the movement pattern readable:
+    home -> safe overhead -> zone approach -> grasp/place -> standby.
     """
 
     PARTS = [
@@ -46,12 +45,16 @@ class ContactRichWorld:
 
     LARGE_PARTS = {"fan_module", "front_panel", "top_cover", "left_side_cover", "right_side_cover"}
 
-    def __init__(self, xml_path: str | Path, viewer: bool = False, realtime: bool = False):
+    def __init__(self, xml_path: str | Path, viewer: bool = False, realtime: bool = False, layout_path: str | Path | None = None):
         import mujoco
 
         self.xml_path = Path(xml_path)
         if not self.xml_path.exists():
             raise FileNotFoundError(f"MuJoCo model not found: {self.xml_path}")
+        if layout_path is None:
+            candidate = self.xml_path.parent.parent / "configs" / "workcell_layout_v1.json"
+            layout_path = candidate if candidate.exists() else None
+        self.layout = WorkcellLayout.load(layout_path) if layout_path else None
 
         self.mujoco = mujoco
         self.model = mujoco.MjModel.from_xml_path(str(self.xml_path))
@@ -92,6 +95,21 @@ class ContactRichWorld:
             out[name] = qpos_addr
         return out
 
+    def staging(self, key: str, default):
+        if self.layout is not None:
+            try:
+                return self.layout.staging(key)
+            except KeyError:
+                pass
+        return np.asarray(default, dtype=float)
+
+    def safe_overhead(self, point: Iterable[float]):
+        if self.layout is not None:
+            return self.layout.safe_overhead(point)
+        p = np.asarray(point, dtype=float).copy()
+        p[2] = 0.98
+        return p
+
     def reset(self):
         self.mujoco.mj_resetData(self.model, self.data)
         self.holding = {"left": None, "right": None}
@@ -101,8 +119,8 @@ class ContactRichWorld:
         self.torque_records.clear()
         self.locked_body_positions.clear()
         self.last_contact_events.clear()
-        self.set_hand_pose("left", [-0.20, 0.28, 0.94])
-        self.set_hand_pose("right", [-0.20, -0.28, 0.94])
+        self.set_hand_pose("left", self.staging("left_home_m", [-0.20, 0.28, 0.94]))
+        self.set_hand_pose("right", self.staging("right_home_m", [-0.20, -0.28, 0.94]))
         self.open_hand("left")
         self.open_hand("right")
         self.step(40)
@@ -128,6 +146,27 @@ class ContactRichWorld:
             self._sync_held_objects()
             self._sync_locked_bodies()
             self.step(1)
+
+    def move_hand_via(self, side: str, waypoints: Iterable[Iterable[float]], duration_each: float = 0.18):
+        for waypoint in waypoints:
+            self.move_hand_to(side, waypoint, duration=duration_each)
+
+    def move_hand_home(self, side: str):
+        key = "left_home_m" if side == "left" else "right_home_m"
+        default = [-0.20, 0.28, 0.94] if side == "left" else [-0.20, -0.28, 0.94]
+        self.move_hand_via(side, [self.safe_overhead(self.hand_pos(side)), self.staging(key, default)], duration_each=0.16)
+
+    def move_hand_standby(self, side: str, role: str = "manipulation"):
+        if side == "left":
+            key = "left_support_standby_m"
+            default = [0.02, 0.20, 0.94]
+        elif role == "tool":
+            key = "right_tool_standby_m"
+            default = [-0.02, -0.26, 0.92]
+        else:
+            key = "right_manipulation_standby_m"
+            default = [0.02, -0.20, 0.94]
+        self.move_hand_via(side, [self.safe_overhead(self.hand_pos(side)), self.staging(key, default)], duration_each=0.16)
 
     def _hand_command(self, cmd):
         for name, value in cmd.actuator_targets().items():
@@ -196,9 +235,6 @@ class ContactRichWorld:
         return np.array([0.035, 0.0, -0.015])
 
     def _sync_held_objects(self):
-        # If a part/tool is held by two hands, the most recently commanded right-hand lead
-        # should not fight a locked installed pose. Therefore release_object() clears all
-        # hand references for an object before lock/open steps.
         for side, obj in list(self.holding.items()):
             if obj and obj in self.free_qpos_addr:
                 self.unlock_body(obj)
@@ -206,10 +242,10 @@ class ContactRichWorld:
 
     def grasp_object(self, hand: str, obj: str, mode: str = "power"):
         self.unlock_body(obj)
-        approach = self.body_pos(obj) + np.array([0.0, 0.0, 0.08])
-        grasp = self.body_pos(obj) + np.array([0.0, 0.0, 0.035])
-        self.move_hand_to(hand, approach, duration=0.25)
-        self.move_hand_to(hand, grasp, duration=0.20)
+        object_pos = self.body_pos(obj)
+        approach = object_pos + np.array([0.0, 0.0, 0.08])
+        grasp = object_pos + np.array([0.0, 0.0, 0.035])
+        self.move_hand_via(hand, [self.safe_overhead(self.hand_pos(hand)), self.safe_overhead(object_pos), approach, grasp], duration_each=0.14)
         self.close_hand(hand, mode)
         self.holding[hand] = obj
         self._sync_held_objects()
@@ -225,22 +261,18 @@ class ContactRichWorld:
 
     def release_object(self, hand: str, obj: str, target):
         target = np.asarray(target, dtype=float)
-        self.move_hand_to(hand, target + np.array([0.0, 0.0, 0.05]), duration=0.25)
-
-        # Critical for bimanual large parts: clear ALL hands holding this object before
-        # any step/open command, otherwise the other hand will drag the object away again.
+        self.move_hand_via(hand, [self.safe_overhead(self.hand_pos(hand)), self.safe_overhead(target), target + np.array([0.0, 0.0, 0.05])], duration_each=0.14)
         released_hands = self.clear_hands_holding(obj)
         if hand not in released_hands:
             released_hands.append(hand)
-
         if obj in self.PARTS:
             self.lock_body_at(obj, target)
             self.installed_parts.add(obj)
         else:
             self.set_free_body_position(obj, target)
-
         for released_hand in released_hands:
             self.open_hand(released_hand)
+            self.move_hand_standby(released_hand, role="tool" if obj == "screwdriver" else "manipulation")
         self._sync_locked_bodies()
         self.mujoco.mj_forward(self.model, self.data)
         self.last_contact_events.append({"hands": released_hands, "object": obj, "event": "released_at_target"})
@@ -251,6 +283,7 @@ class ContactRichWorld:
         return float(np.linalg.norm(self.body_pos(part) - self.site_pos(self.part_targets[part])) * 1000.0)
 
     def acquire_screwdriver(self):
+        self.move_hand_standby("right", role="tool")
         self.grasp_object("right", "screwdriver", mode="tool")
         return self.holding["right"] == "screwdriver"
 
@@ -263,8 +296,10 @@ class ContactRichWorld:
             return False
         if screw in self.consumed_screws:
             return False
-        self.move_hand_to("right", self.site_pos("screw_bin") + np.array([0.0, 0.0, 0.05]), duration=0.18)
-        self.move_hand_to("right", self.site_pos(self.part_targets[part]) + np.array([0.025, -0.025, 0.08]), duration=0.28)
+        screw_bin = self.site_pos("screw_bin")
+        part_target = self.site_pos(self.part_targets[part])
+        self.move_hand_via("right", [self.safe_overhead(self.hand_pos("right")), self.safe_overhead(screw_bin), screw_bin + np.array([0.0, 0.0, 0.05])], duration_each=0.12)
+        self.move_hand_via("right", [self.safe_overhead(screw_bin), self.safe_overhead(part_target), part_target + np.array([0.025, -0.025, 0.08])], duration_each=0.12)
         self.step(20)
         self.consumed_screws.add(screw)
         self.torque_records[screw] = float(np.random.uniform(0.43, 0.66))
@@ -272,12 +307,18 @@ class ContactRichWorld:
         return True
 
     def transfer_case_to_output(self):
-        self.move_hand_to("left", np.array([0.18, 0.10, 0.92]), duration=0.25)
-        self.move_hand_to("right", np.array([0.18, -0.10, 0.92]), duration=0.25)
+        left_pick = np.array([0.18, 0.10, 0.92])
+        right_pick = np.array([0.18, -0.10, 0.92])
+        left_drop = np.array([0.52, 0.10, 0.92])
+        right_drop = np.array([0.52, -0.10, 0.92])
+        self.move_hand_via("left", [self.safe_overhead(self.hand_pos("left")), self.safe_overhead(left_pick), left_pick], duration_each=0.16)
+        self.move_hand_via("right", [self.safe_overhead(self.hand_pos("right")), self.safe_overhead(right_pick), right_pick], duration_each=0.16)
         self.close_hand("left", mode="support")
         self.close_hand("right", mode="support")
-        self.move_hand_to("left", np.array([0.52, 0.10, 0.92]), duration=0.45)
-        self.move_hand_to("right", np.array([0.52, -0.10, 0.92]), duration=0.45)
+        self.move_hand_via("left", [self.safe_overhead(left_pick), self.safe_overhead(left_drop), left_drop], duration_each=0.18)
+        self.move_hand_via("right", [self.safe_overhead(right_pick), self.safe_overhead(right_drop), right_drop], duration_each=0.18)
         self.open_hand("left")
         self.open_hand("right")
+        self.move_hand_home("left")
+        self.move_hand_home("right")
         return True
