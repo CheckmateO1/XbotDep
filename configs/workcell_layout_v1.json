@@ -1,0 +1,93 @@
+{
+  "name": "XbotDep V1.1 structured workcell layout",
+  "frame_convention": {
+    "robot_faces": "+X",
+    "left_hand_side": "+Y",
+    "right_hand_side": "-Y",
+    "table_center_m": [-0.10, 0.0, 0.735]
+  },
+  "zones": {
+    "fixture_zone": {
+      "purpose": "fixed empty chassis and assembly datum",
+      "center_m": [0.12, 0.0, 0.78],
+      "size_m": [0.36, 0.30],
+      "preferred_hands": ["left_support", "right_manipulation"]
+    },
+    "small_part_zone": {
+      "purpose": "small brackets, filters, IO panels",
+      "center_m": [-0.28, 0.02, 0.82],
+      "size_m": [0.24, 0.52],
+      "preferred_hand": "right",
+      "capacity": {
+        "motherboard_tray_bracket": 20,
+        "psu_bracket": 20,
+        "dust_filter": 30,
+        "front_io_panel": 30
+      }
+    },
+    "large_panel_zone": {
+      "purpose": "large modules and covers requiring bimanual handling",
+      "center_m": [-0.42, 0.02, 0.82],
+      "size_m": [0.30, 0.52],
+      "preferred_hands": ["left", "right"],
+      "capacity": {
+        "fan_module": 20,
+        "front_panel": 20,
+        "top_cover": 20,
+        "left_side_cover": 20,
+        "right_side_cover": 20
+      }
+    },
+    "screw_bin_zone": {
+      "purpose": "bulk screw supply",
+      "center_m": [-0.05, 0.34, 0.79],
+      "size_m": [0.24, 0.12],
+      "preferred_hand": "right",
+      "capacity": {
+        "generic_m3_screw": 200
+      }
+    },
+    "cable_zone": {
+      "purpose": "front IO cable supply",
+      "center_m": [-0.40, 0.26, 0.82],
+      "size_m": [0.16, 0.12],
+      "preferred_hand": "right_pinch",
+      "capacity": {
+        "front_io_cable": 50
+      }
+    },
+    "tool_zone": {
+      "purpose": "screwdrivers and drills",
+      "center_m": [-0.05, -0.34, 0.80],
+      "size_m": [0.24, 0.10],
+      "preferred_hand": "right",
+      "tools": {
+        "screwdriver": 1,
+        "electric_drill_placeholder": 1
+      }
+    },
+    "output_zone": {
+      "purpose": "completed case handoff",
+      "center_m": [0.52, 0.0, 0.80],
+      "size_m": [0.40, 0.32],
+      "preferred_hands": ["left", "right"]
+    }
+  },
+  "hand_staging": {
+    "left_home_m": [-0.20, 0.28, 0.94],
+    "right_home_m": [-0.20, -0.28, 0.94],
+    "left_support_standby_m": [0.02, 0.20, 0.94],
+    "right_manipulation_standby_m": [0.02, -0.20, 0.94],
+    "right_tool_standby_m": [-0.02, -0.26, 0.92],
+    "safe_lift_z_m": 0.98,
+    "part_approach_z_offset_m": 0.08,
+    "tool_approach_z_offset_m": 0.06
+  },
+  "quality_rules": {
+    "no_tool_during_part_pick": true,
+    "large_parts_require_both_hands_free": true,
+    "right_hand_only_for_screwdriver": true,
+    "return_tool_before_next_material_pick": true,
+    "avoid_straight_line_table_sweeps": true
+  }
+}
