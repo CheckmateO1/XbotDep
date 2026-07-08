@@ -23,6 +23,7 @@ LOG_DIR = ROOT / "logs"
 
 def run_preflight() -> None:
     checks = [
+        ROOT / "scripts" / "validate_python_static.py",
         ROOT / "scripts" / "validate_sop_static.py",
         ROOT / "scripts" / "validate_workcell_layout.py",
     ]
@@ -36,7 +37,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--viewer", action="store_true")
     parser.add_argument("--realtime", action="store_true")
-    parser.add_argument("--skip-preflight", action="store_true", help="Skip static SOP/layout validation before MuJoCo run.")
+    parser.add_argument("--skip-preflight", action="store_true", help="Skip static SOP/layout/Python validation before MuJoCo run.")
     parser.add_argument("--quality-report", default=str(LOG_DIR / "v1_1_quality_summary.json"))
     parser.add_argument("--history-report", default=str(LOG_DIR / "v1_1_fsm_history.json"))
     args = parser.parse_args()
