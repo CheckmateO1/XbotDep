@@ -1,6 +1,6 @@
 {
-  "name": "XbotDep V1 Contact-Rich PC Case Assembly SOP",
-  "version": "V1.0-completion-fix",
+  "name": "XbotDep V1.1 Structured Workcell PC Case Assembly SOP",
+  "version": "V1.1-acceptance-baseline",
   "start_step": "INIT_WORKCELL",
   "done_step": "DONE",
   "limits": {
