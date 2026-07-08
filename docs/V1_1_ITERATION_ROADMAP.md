@@ -18,7 +18,7 @@ It does not mean final sim-to-real robotics. PPO contact policies, perception, f
 
 ## Current Stage
 
-Current stage: **V1.1.2 Industrial Workcell Model Completion**
+Current stage: **V1.1.3 Dexterous Manipulation Quality Completion**
 
 Status: **active development iteration**
 
@@ -35,9 +35,9 @@ Completed gates:
 - deterministic model generation pipeline;
 - runtime acceptance execution.
 
-## V1.1.2 Goal
+## V1.1.2 completed
 
-Industrial workcell completion:
+Completed gates:
 
 - structured material bins;
 - screw feeder visual and logical capacity;
@@ -46,18 +46,25 @@ Industrial workcell completion:
 - fixture clamps and datum references;
 - output conveyor visualization;
 - MJCF validator checks industrial visual entities;
-- layout validator checks station-to-zone consistency.
+- layout validator checks station-to-zone consistency;
+- runtime reached SUCCESS=True and DONE in user acceptance.
 
-## Remaining versions after V1.1.2
+## V1.1.3 Goal
 
-1. **V1.1.3 — Dexterous manipulation quality completion**
-   - refined hand choreography;
-   - grasp taxonomy;
-   - left/right role optimization;
-   - motion efficiency metrics;
-   - contact-quality thresholds.
+Dexterous manipulation quality completion:
 
-2. **V1.1.4 — Final acceptance freeze**
+- explicit grasp taxonomy;
+- left/right hand role policy;
+- runtime motion quality contract;
+- expanded posture, grasp, release and path metrics;
+- runtime quality gate after SOP execution;
+- inventory correctness included in quality gate;
+- total hand travel threshold;
+- required support/tool/power/pinch posture thresholds.
+
+## Remaining version after V1.1.3
+
+1. **V1.1.4 — Final acceptance freeze**
    - final regression;
    - deterministic replay;
    - runtime acceptance report;
